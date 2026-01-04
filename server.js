@@ -21,10 +21,10 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // --- GEMINI AI ANALYSIS ENDPOINT ---
 const MODEL_CHAIN = [
-  'gemini-2.5-pro',
-  'gemini-flash-latest',
-  'gemini-flash-lite-latest',
-  'gemini-2.5-flash'
+  'gemini-2.5-pro',            // 1. Primary High-IQ Model
+  'gemini-flash-latest',       // 2. Standard Flash
+  'gemini-2.5-flash',          // 3. New Flash
+  'gemini-flash-lite-latest'   // 4. Ultimate Fallback
 ];
 
 // Helper to reliably parse JSON even if the model adds markdown or junk
@@ -99,13 +99,11 @@ app.post('/api/analyze', async (req, res) => {
 
     Your Goal: Provide a clear, institutional-grade market analysis.
 
-    Requirements:
-    1. 'thoughtProcess': A string containing your raw internal analysis. Be critical and specific.
-    2. 'verdict': ONE of ['UP', 'DOWN', 'NEUTRAL']. 
-       - UP/DOWN requires >90% confidence based on clear confluence.
-       - If choppy/unclear, use NEUTRAL.
-    3. 'confidence': 0-100.
-    4. 'summary': concise executive summary.
+    CRITICAL RESPONSE RULES:
+    1. Return ONLY a valid JSON object.
+    2. Do NOT write any conversational text, markdown, or 'Thought Process:' headers outside the JSON.
+    3. Put your internal reasoning inside the 'thoughtProcess' field of the JSON.
+    4. Verdict MUST be one of: 'UP', 'DOWN', or 'NEUTRAL'.
     
     Return ONLY valid JSON matching the schema.
   `;
