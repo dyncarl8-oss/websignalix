@@ -212,10 +212,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       setTimeout(scrollToBottom, 100);
 
       // CHECK VERDICT
-      if (analysis.verdict === 'NEUTRAL') {
+      // Enforce 90% threshold for confidence
+      if (analysis.verdict === 'NEUTRAL' || analysis.confidence < 90) {
         await new Promise(r => setTimeout(r, 500));
         addFeedItem('system-message', { 
-          text: "Analysis Inconclusive: Market structure does not meet the strict 90% confidence threshold required for a signal." 
+          text: `Analysis Inconclusive: Confidence (${analysis.confidence}%) does not meet the strict 90% threshold required for a high-probability signal.` 
         });
         setSessionState('complete');
         setTimeout(scrollToBottom, 100);

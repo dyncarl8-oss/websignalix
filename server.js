@@ -21,10 +21,10 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // --- GEMINI AI ANALYSIS ENDPOINT ---
 const MODEL_CHAIN = [
-  'gemini-2.5-pro',            // 1. Primary High-IQ Model
-  'gemini-flash-latest',       // 2. Standard Flash
-  'gemini-2.5-flash',          // 3. New Flash
-  'gemini-flash-lite-latest'   // 4. Ultimate Fallback
+  'gemini-2.5-pro',
+  'gemini-flash-latest',
+  'gemini-2.5-flash',
+  'gemini-flash-lite-latest'
 ];
 
 // Helper to reliably parse JSON even if the model adds markdown or junk
@@ -104,6 +104,9 @@ app.post('/api/analyze', async (req, res) => {
     2. Do NOT write any conversational text, markdown, or 'Thought Process:' headers outside the JSON.
     3. Put your internal reasoning inside the 'thoughtProcess' field of the JSON.
     4. Verdict MUST be one of: 'UP', 'DOWN', or 'NEUTRAL'.
+    5. Confidence Score must be a number between 0 and 100.
+    6. STRICT THRESHOLD: If your calculated confidence is below 90, you MUST set the verdict to 'NEUTRAL'.
+    7. Only output 'UP' or 'DOWN' if you are 90%+ sure based on the technicals.
     
     Return ONLY valid JSON matching the schema.
   `;
@@ -152,7 +155,29 @@ app.post('/api/analyze', async (req, res) => {
 
       // Robust Parsing
       const parsed = cleanAndParseJSON(resultText);
-      console.log(`[Server] Success: ${currentModel} -> Verdict: ${parsed.verdict}`);
+      
+      // Normalization & Enforcement
+      if (parsed.confidence !== undefined) {
+         // Fix decimal confidence (e.g. 0.85 -> 85)
+         if (parsed.confidence <= 1 && parsed.confidence > 0) {
+             parsed.confidence = Math.round(parsed.confidence * 100);
+         }
+         
+         // Fix absurdly low integer confidence (e.g. 8 -> 80 if model confused 0-10 scale)
+         // Assuming if < 10 but > 1, it might be a 1-10 scale.
+         // But let's stick to the prompt rule first.
+      }
+
+      // STRICT 90% RULE ENFORCEMENT
+      if (parsed.confidence < 90) {
+          console.log(`[Server] Confidence ${parsed.confidence}% is below 90%. Overriding verdict to NEUTRAL.`);
+          parsed.verdict = 'NEUTRAL';
+          if (!parsed.summary.includes("Low Confidence")) {
+              parsed.summary = `(Analysis Confidence: ${parsed.confidence}%) Market conditions do not meet the strict 90% certainty threshold. ` + parsed.summary;
+          }
+      }
+
+      console.log(`[Server] Success: ${currentModel} -> Verdict: ${parsed.verdict} (${parsed.confidence}%)`);
       return parsed;
 
     } catch (error) {
