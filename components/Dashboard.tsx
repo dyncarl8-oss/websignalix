@@ -6,11 +6,11 @@ import { fetchOHLCData } from '../services/cryptoService';
 import { computeIndicators } from '../services/indicatorService';
 import { analyzeMarket } from '../services/geminiService';
 import { userService } from '../services/userService';
-import { paymentService } from '../services/paymentService';
 
 // Components
 import VerdictCard from './VerdictCard';
 import PricingModal from './PricingModal';
+import SubscriptionModal from './SubscriptionModal'; // Import the new modal
 import { PairSelector, TimeframeSelector } from './SelectionUI';
 import { DataCollectionStep, TechnicalStep, AggregationStep, AIAnalysisStep } from './AnalysisSteps';
 
@@ -27,6 +27,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [selectedPair, setSelectedPair] = useState<CryptoPair | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false); // State for sub modal
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   
@@ -343,7 +344,10 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                      <div className="p-1 space-y-1">
                        {user.isPro && (
                          <button
-                           onClick={() => paymentService.openPortal()}
+                           onClick={() => {
+                             setIsProfileMenuOpen(false);
+                             setShowSubscription(true); // Open internal modal
+                           }}
                            className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white rounded-lg transition-colors flex items-center gap-2"
                          >
                            <CreditCard className="w-4 h-4" />
@@ -425,6 +429,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       </main>
 
       <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} user={user} />
+      <SubscriptionModal isOpen={showSubscription} onClose={() => setShowSubscription(false)} user={user} />
     </div>
   );
 }

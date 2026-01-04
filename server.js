@@ -217,19 +217,15 @@ app.post('/api/analyze', async (req, res) => {
 app.post('/api/create-checkout', async (req, res) => {
   try {
     const { customerEmail, userId } = req.body;
-    
-    // Load Token from Env
     const polarToken = process.env.POLAR_ACCESS_TOKEN;
     
     if (!polarToken) {
-      console.error('Missing POLAR_ACCESS_TOKEN in .env file');
       return res.status(500).json({ error: 'Server configuration error: Missing Payment Token' });
     }
 
-    const productId = '19c116dd-58c2-4df0-8904-c1cb6d617e95';
+    const productId = '19c116dd-58c2-4df0-8904-c1cb6d617e95'; // Replace with env var if needed
     
     let origin = process.env.BASE_URL;
-    
     if (!origin) {
       if (req.headers.origin) {
         origin = req.headers.origin;
@@ -250,9 +246,7 @@ app.post('/api/create-checkout', async (req, res) => {
         product_id: productId,
         success_url: `${origin}?payment=success`,
         customer_email: customerEmail,
-        metadata: {
-          userId: userId
-        }
+        metadata: { userId: userId }
       })
     });
 
@@ -266,6 +260,112 @@ app.post('/api/create-checkout', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('Server Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- SUBSCRIPTION MANAGEMENT ---
+
+// GET /api/subscription?email=...
+app.get('/api/subscription', async (req, res) => {
+  const { email } = req.query;
+  const polarToken = process.env.POLAR_ACCESS_TOKEN;
+
+  if (!polarToken || !email) {
+    return res.status(400).json({ error: 'Missing token or email' });
+  }
+
+  try {
+    // 1. Find Customer by Email
+    const customerSearch = await fetch(`https://sandbox-api.polar.sh/v1/customers?email=${encodeURIComponent(email)}`, {
+      headers: { 'Authorization': `Bearer ${polarToken}` }
+    });
+
+    if (!customerSearch.ok) throw new Error('Failed to search customers');
+    
+    const customers = await customerSearch.json();
+    const customer = customers.items?.[0];
+
+    if (!customer) {
+      return res.json({ active: false, message: 'No customer found' });
+    }
+
+    // 2. List Subscriptions for Customer
+    const subResponse = await fetch(`https://sandbox-api.polar.sh/v1/subscriptions?customer_id=${customer.id}`, {
+      headers: { 'Authorization': `Bearer ${polarToken}` }
+    });
+
+    if (!subResponse.ok) throw new Error('Failed to fetch subscriptions');
+
+    const subs = await subResponse.json();
+    // Find active subscription
+    const activeSub = subs.items?.find(s => s.status === 'active');
+
+    if (activeSub) {
+       res.json({
+         found: true,
+         id: activeSub.id,
+         status: activeSub.status,
+         current_period_end: activeSub.current_period_end,
+         cancel_at_period_end: activeSub.cancel_at_period_end,
+         product_id: activeSub.product_id,
+         amount: activeSub.amount,
+         currency: activeSub.currency
+       });
+    } else {
+       // Check for any canceled but not yet expired
+       const anySub = subs.items?.[0];
+       if (anySub) {
+         res.json({
+           found: true,
+           id: anySub.id,
+           status: anySub.status,
+           current_period_end: anySub.current_period_end,
+           cancel_at_period_end: anySub.cancel_at_period_end
+         });
+       } else {
+         res.json({ found: false });
+       }
+    }
+
+  } catch (error) {
+    console.error('Subscription Fetch Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// POST /api/subscription/cancel
+app.post('/api/subscription/cancel', async (req, res) => {
+  const { subscriptionId } = req.body;
+  const polarToken = process.env.POLAR_ACCESS_TOKEN;
+
+  if (!polarToken || !subscriptionId) {
+    return res.status(400).json({ error: 'Missing Data' });
+  }
+
+  try {
+    const response = await fetch(`https://sandbox-api.polar.sh/v1/subscriptions/${subscriptionId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${polarToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        cancel_at_period_end: true
+      })
+    });
+
+    if (!response.ok) {
+      const txt = await response.text();
+      console.error('Cancel Error:', txt);
+      return res.status(response.status).json({ error: 'Failed to cancel' });
+    }
+
+    const result = await response.json();
+    res.json(result);
+
+  } catch (error) {
+    console.error('Cancellation Exception:', error);
     res.status(500).json({ error: error.message });
   }
 });

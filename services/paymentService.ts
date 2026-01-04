@@ -1,5 +1,15 @@
 import { UserProfile } from '../types';
 
+export interface SubscriptionDetails {
+  found: boolean;
+  id?: string;
+  status?: string;
+  current_period_end?: string;
+  cancel_at_period_end?: boolean;
+  amount?: number;
+  currency?: string;
+}
+
 export const paymentService = {
   async startCheckout(user: UserProfile) {
     try {
@@ -31,9 +41,18 @@ export const paymentService = {
     }
   },
 
-  openPortal() {
-    // In production, this would be https://polar.sh/purchases or your org's portal
-    // For now, we use the sandbox URL to match the checkout environment
-    window.open('https://sandbox.polar.sh/purchases', '_blank');
+  async getSubscription(email: string): Promise<SubscriptionDetails> {
+    const res = await fetch(`/api/subscription?email=${encodeURIComponent(email)}`);
+    if (!res.ok) throw new Error("Failed to fetch subscription");
+    return await res.json();
+  },
+
+  async cancelSubscription(subscriptionId: string): Promise<void> {
+    const res = await fetch('/api/subscription/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionId })
+    });
+    if (!res.ok) throw new Error("Failed to cancel subscription");
   }
 };
