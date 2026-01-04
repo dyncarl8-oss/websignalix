@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Coins, RefreshCw, Zap, LogOut, User } from 'lucide-react';
+import { Activity, Coins, RefreshCw, Zap, LogOut, User, ChevronDown } from 'lucide-react';
 import { CryptoPair, FeedItem, AggregationResult, UserProfile } from '../types';
 import { COST_PER_ANALYSIS } from '../constants';
 import { fetchOHLCData } from '../services/cryptoService';
@@ -27,6 +27,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -276,14 +277,43 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
            <div className="h-6 w-px bg-gray-800 mx-1"></div>
 
-           <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border border-gray-600 flex items-center justify-center">
-                 <User className="w-4 h-4 text-gray-300" />
-              </div>
-              <button onClick={onLogout} className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center gap-1">
-                 <LogOut className="w-3 h-3" />
-                 Sign Out
+           {/* Profile Dropdown */}
+           <div className="relative">
+              <button 
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="flex items-center gap-2 hover:bg-gray-800/50 p-1 rounded-full transition-all pr-2 border border-transparent hover:border-gray-700 focus:outline-none"
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={user.name} className="w-8 h-8 rounded-full border border-gray-600 object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border border-gray-600 flex items-center justify-center">
+                     <span className="text-xs font-bold text-gray-300">{user.name.charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
+                <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              {/* Dropdown Menu */}
+              {isProfileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)}></div>
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-[#0b0b10] border border-gray-800 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                     <div className="p-4 border-b border-gray-800 bg-gray-900/30">
+                        <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                        <p className="text-xs text-gray-500 truncate font-mono mt-0.5">{user.email}</p>
+                     </div>
+                     <div className="p-1">
+                       <button 
+                         onClick={onLogout}
+                         className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-900/10 hover:text-red-300 rounded-lg transition-colors flex items-center gap-2"
+                       >
+                         <LogOut className="w-4 h-4" />
+                         Sign Out
+                       </button>
+                     </div>
+                  </div>
+                </>
+              )}
            </div>
         </div>
       </header>

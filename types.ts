@@ -126,6 +126,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  photoURL?: string | null;
   credits: number;
   joinedAt: number;
 }

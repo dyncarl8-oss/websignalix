@@ -22,6 +22,7 @@ const mapUserToProfile = (firebaseUser: User, extraData: any): UserProfile => {
     id: firebaseUser.uid,
     name: extraData?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Trader',
     email: firebaseUser.email || '',
+    photoURL: firebaseUser.photoURL || null,
     credits: extraData?.credits ?? INITIAL_CREDITS,
     joinedAt: extraData?.joinedAt || Date.now()
   };
