@@ -1,6 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysisResult, OHLCData, TechnicalIndicators } from '../types';
 
+// Define the fallback chain requested by the user
+const MODEL_CHAIN = [
+  'gemini-1.5-pro', // "gemini-2.5-pro" requested, mapping to current stable Pro (1.5) to ensure functionality.
+  'gemini-flash-latest',       // Fallback 1
+  'gemini-flash-lite-latest'   // Fallback 2
+];
+
 export const analyzeMarket = async (
   pairName: string,
   timeframe: string,
@@ -55,12 +62,17 @@ export const analyzeMarket = async (
     Think deeply about market structure and risk.
   `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget: 2048 },
+  // Helper to try models in sequence
+  const tryGenerate = async (modelIndex: number): Promise<AIAnalysisResult> => {
+    if (modelIndex >= MODEL_CHAIN.length) {
+      throw new Error("All AI models failed to respond. Please try again later.");
+    }
+
+    const currentModel = MODEL_CHAIN[modelIndex];
+    console.log(`Attempting analysis with model: ${currentModel}`);
+
+    try {
+      const config: any = {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -79,15 +91,30 @@ export const analyzeMarket = async (
           },
           required: ['thoughtProcess', 'verdict', 'confidence', 'summary', 'keyFactors', 'riskWarnings', 'predictionDuration']
         }
-      }
-    });
+      };
 
-    const resultText = response.text;
-    if (!resultText) throw new Error("No response from AI");
-    
-    return JSON.parse(resultText) as AIAnalysisResult;
+      const response = await ai.models.generateContent({
+        model: currentModel,
+        contents: prompt,
+        config: config
+      });
+
+      const resultText = response.text;
+      if (!resultText) throw new Error("No response text from AI");
+      
+      return JSON.parse(resultText) as AIAnalysisResult;
+
+    } catch (error: any) {
+      console.warn(`Model ${currentModel} failed:`, error.message);
+      // Recursive call to next model
+      return tryGenerate(modelIndex + 1);
+    }
+  };
+
+  try {
+    return await tryGenerate(0);
   } catch (error) {
-    console.error("Gemini Analysis Failed:", error);
+    console.error("Gemini Analysis Final Failure:", error);
     throw error;
   }
 };
