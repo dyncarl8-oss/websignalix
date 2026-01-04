@@ -128,5 +128,6 @@ export interface UserProfile {
   email: string;
   photoURL?: string | null;
   credits: number;
+  isPro: boolean;
   joinedAt: number;
 }

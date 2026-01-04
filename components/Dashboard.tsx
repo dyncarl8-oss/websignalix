@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Coins, RefreshCw, Zap, LogOut, User, ChevronDown } from 'lucide-react';
+import { Activity, Coins, RefreshCw, Zap, LogOut, User, ChevronDown, Crown } from 'lucide-react';
 import { CryptoPair, FeedItem, AggregationResult, UserProfile } from '../types';
 import { COST_PER_ANALYSIS } from '../constants';
 import { fetchOHLCData } from '../services/cryptoService';
@@ -31,10 +31,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Sync credits to persistent storage whenever they change
+  // Sync credits to persistent storage whenever they change (Only if not Pro)
   useEffect(() => {
-    userService.updateCredits(user.email, credits);
-  }, [credits, user.email]);
+    if (!user.isPro) {
+      userService.updateCredits(user.email, credits);
+    }
+  }, [credits, user.email, user.isPro]);
 
   // Aggressive auto-scroll on feed update
   useEffect(() => {
@@ -91,13 +93,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   };
 
   const runAnalysis = async (pair: CryptoPair, tf: string) => {
-    if (credits < COST_PER_ANALYSIS) {
+    // Pro users bypass credit check
+    if (!user.isPro && credits < COST_PER_ANALYSIS) {
       setShowPricing(true);
-      setSessionState('pair-select'); // Reset to prevent stuck state
+      setSessionState('pair-select');
       return;
     }
-
-    // NOTE: Credit deduction moved to successful completion block below
 
     // 1. Data Collection
     const step1Id = addFeedItem('step-data', { pair: pair.symbol }, 'loading');
@@ -187,23 +188,19 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       const analysis = await analyzeMarket(pair.name, tf, ohlc, indicators);
       const aiDuration = (Date.now() - aiStartTime) / 1000;
 
-      // Simulate streaming thought process with fast typewriter speed
+      // Simulate streaming thought process
       const fullThought = analysis.thoughtProcess || analysis.summary;
       let currentText = "";
       const chars = fullThought.split('');
-      const chunkSize = 5; // Larger chunks for faster text appearance
+      const chunkSize = 5; 
       
-      // Loop for typewriter effect
       for (let i = 0; i < chars.length; i += chunkSize) {
         currentText += chars.slice(i, i + chunkSize).join('');
         updateFeedItem(step4Id, {
           data: { partialThought: currentText }
         });
         
-        // Auto-scroll frequently
         if (i % 10 === 0) scrollToBottom();
-
-        // Very fast delay for "high speed processing" feel (5-15ms)
         const delay = 5 + Math.random() * 10;
         await new Promise(r => setTimeout(r, delay));
       }
@@ -216,19 +213,20 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
       // CHECK VERDICT
       if (analysis.verdict === 'NEUTRAL') {
-        // No deduction for neutral results
         await new Promise(r => setTimeout(r, 500));
         addFeedItem('system-message', { 
-          text: "Analysis Inconclusive: Market structure does not meet the strict 90% confidence threshold required for a signal. No credits were consumed." 
+          text: "Analysis Inconclusive: Market structure does not meet the strict 90% confidence threshold required for a signal." 
         });
         setSessionState('complete');
         setTimeout(scrollToBottom, 100);
       } else {
-        // Deduct credits only on successful analysis
-        setCredits(prev => prev - COST_PER_ANALYSIS);
+        // Only deduct credits if NOT Pro
+        if (!user.isPro) {
+          setCredits(prev => prev - COST_PER_ANALYSIS);
+        }
 
         // 5. Final Verdict
-        await new Promise(r => setTimeout(r, 800)); // Pause for dramatic effect
+        await new Promise(r => setTimeout(r, 800)); 
         addFeedItem('step-verdict', { result: analysis });
         setSessionState('complete');
         setTimeout(scrollToBottom, 100);
@@ -236,9 +234,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
     } catch (error: any) {
       console.error(error);
-      
       updateFeedItem(step1Id, { status: 'error', data: { error: error.message } });
-      addFeedItem('system-message', { text: `Analysis failed: ${error.message}. No credits consumed.` });
+      addFeedItem('system-message', { text: `Analysis failed: ${error.message}.` });
       setSessionState('pair-select');
     }
   };
@@ -256,14 +253,21 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         </div>
 
         <div className="flex items-center gap-4">
-           <button 
-             onClick={() => setShowPricing(true)}
-             className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900 border border-gray-800 hover:border-purple-500/50 transition-colors"
-           >
-             <Coins className="w-4 h-4 text-yellow-500" />
-             <span className="text-xs font-mono font-bold hidden md:inline">{credits} credits</span>
-             <span className="text-[10px] uppercase bg-purple-500 text-white px-1.5 rounded ml-1">Get Pro</span>
-           </button>
+           {user.isPro ? (
+             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-900/40 to-yellow-600/10 border border-yellow-700/50">
+               <Crown className="w-4 h-4 text-yellow-500" />
+               <span className="text-xs font-mono font-bold text-yellow-500">PRO MEMBER</span>
+             </div>
+           ) : (
+             <button 
+               onClick={() => setShowPricing(true)}
+               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900 border border-gray-800 hover:border-purple-500/50 transition-colors"
+             >
+               <Coins className="w-4 h-4 text-yellow-500" />
+               <span className="text-xs font-mono font-bold hidden md:inline">{credits} credits</span>
+               <span className="text-[10px] uppercase bg-purple-500 text-white px-1.5 rounded ml-1">Get Pro</span>
+             </button>
+           )}
            
            <div className="h-6 w-px bg-gray-800 mx-1"></div>
 
@@ -301,6 +305,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                      <div className="p-4 border-b border-gray-800 bg-gray-900/30">
                         <p className="text-sm font-bold text-white truncate">{user.name}</p>
                         <p className="text-xs text-gray-500 truncate font-mono mt-0.5">{user.email}</p>
+                        {user.isPro && <p className="text-[10px] text-yellow-500 font-bold mt-1">★ PRO PLAN</p>}
                      </div>
                      <div className="p-1">
                        <button 
@@ -327,10 +332,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         </div>
 
         <div className="max-w-3xl mx-auto relative z-10 flex flex-col gap-6 pb-20">
-          
           {feed.map((item) => (
             <div key={item.id} className="w-full">
-              
               {item.type === 'system-message' && (
                 <div className="flex gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
                    <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0 border border-gray-700 mt-1">
@@ -341,7 +344,6 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                    </div>
                 </div>
               )}
-
               {item.type === 'user-selection' && (
                 <div className="flex justify-end animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="bg-purple-600 text-white px-4 py-2 rounded-l-xl rounded-br-xl text-sm font-medium shadow-[0_0_15px_rgba(147,51,234,0.3)]">
@@ -349,77 +351,38 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   </div>
                 </div>
               )}
-
               {item.type === 'step-data' && (
-                <DataCollectionStep 
-                  status={item.status} 
-                  data={item.data?.rawData} 
-                  pair={item.data?.pair} 
-                  duration={item.data?.duration}
-                />
+                <DataCollectionStep status={item.status} data={item.data?.rawData} pair={item.data?.pair} duration={item.data?.duration} />
               )}
-
               {item.type === 'step-technical' && (
-                <TechnicalStep 
-                  status={item.status}
-                  indicators={item.data?.indicators}
-                  duration={item.data?.duration}
-                />
+                <TechnicalStep status={item.status} indicators={item.data?.indicators} duration={item.data?.duration} />
               )}
-
               {item.type === 'step-aggregation' && (
-                <AggregationStep
-                  status={item.status}
-                  results={item.data?.results}
-                  duration={item.data?.duration}
-                />
+                <AggregationStep status={item.status} results={item.data?.results} duration={item.data?.duration} />
               )}
-
               {item.type === 'step-ai' && (
-                <AIAnalysisStep
-                  status={item.status}
-                  result={item.data?.result}
-                  partialThought={item.data?.partialThought}
-                  duration={item.data?.duration}
-                />
+                <AIAnalysisStep status={item.status} result={item.data?.result} partialThought={item.data?.partialThought} duration={item.data?.duration} />
               )}
-
               {item.type === 'step-verdict' && (
-                <div className="mt-4 mb-8">
-                  <VerdictCard result={item.data.result} />
-                </div>
+                <div className="mt-4 mb-8"><VerdictCard result={item.data.result} /></div>
               )}
-
             </div>
           ))}
 
-          {/* Interactive Inputs based on Session State */}
           <div className="mt-4">
-             {sessionState === 'pair-select' && (
-                <PairSelector onSelect={handlePairSelect} />
-             )}
-
-             {sessionState === 'timeframe-select' && (
-                <TimeframeSelector onSelect={handleTimeframeSelect} />
-             )}
-
+             {sessionState === 'pair-select' && (<PairSelector onSelect={handlePairSelect} />)}
+             {sessionState === 'timeframe-select' && (<TimeframeSelector onSelect={handleTimeframeSelect} />)}
              {sessionState === 'complete' && (
                <div className="text-center animate-in fade-in duration-700 delay-500">
-                 <button 
-                   onClick={resetSession}
-                   className="px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full text-sm font-bold text-white transition-all hover:scale-105"
-                 >
-                   Analyze Another Pair
-                 </button>
+                 <button onClick={resetSession} className="px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full text-sm font-bold text-white transition-all hover:scale-105">Analyze Another Pair</button>
                </div>
              )}
           </div>
-          
           <div ref={bottomRef} className="h-10" />
         </div>
       </main>
 
-      <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} />
+      <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} user={user} />
     </div>
   );
 }

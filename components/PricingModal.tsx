@@ -1,13 +1,30 @@
-import React from 'react';
-import { X, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Check, Zap, Loader2 } from 'lucide-react';
+import { UserProfile } from '../types';
+import { paymentService } from '../services/paymentService';
 
 interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  user: UserProfile;
 }
 
-const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
+const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, user }) => {
+  const [loading, setLoading] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleSubscribe = async () => {
+    setLoading(true);
+    try {
+      await paymentService.startCheckout(user);
+      // Browser will redirect
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      alert("Failed to connect to payment provider. Please ensure the backend server is running.");
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -20,6 +37,9 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
         </button>
 
         <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-cyber-cyan/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyber-cyan/50 shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+             <Zap className="w-6 h-6 text-cyber-cyan" />
+          </div>
           <h2 className="text-2xl font-bold text-white mb-2">Upgrade to Pro</h2>
           <p className="text-gray-400 text-sm">Unlock the full power of the Neural Engine.</p>
         </div>
@@ -46,14 +66,22 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             ))}
           </ul>
           
-          <a 
-            href="https://polar.sh" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="block w-full py-3 bg-cyber-cyan hover:bg-cyan-400 text-black font-bold text-center rounded transition-colors shadow-[0_0_20px_rgba(0,243,255,0.3)]"
+          <button 
+            onClick={handleSubscribe}
+            disabled={loading}
+            className="w-full py-3 bg-cyber-cyan hover:bg-cyan-400 text-black font-bold text-center rounded transition-all shadow-[0_0_20px_rgba(0,243,255,0.3)] flex items-center justify-center gap-2"
           >
-            Subscribe via Polar.sh
-          </a>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Processing...
+              </>
+            ) : (
+              "Subscribe via Polar.sh"
+            )}
+          </button>
+          <p className="text-center text-[10px] text-gray-500 mt-3">
+             Secure payment via Polar Sandbox. You will be redirected.
+          </p>
         </div>
       </div>
     </div>

@@ -16,6 +16,15 @@ export default defineConfig(({ mode }) => {
       'process.env': {
         API_KEY: env.API_KEY
       }
+    },
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        }
+      }
     }
   };
 });

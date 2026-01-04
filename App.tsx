@@ -14,6 +14,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewState>('landing');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   // Listen for Firebase Auth state changes
   useEffect(() => {
@@ -21,24 +22,36 @@ export default function App() {
       if (firebaseUser) {
         // User is signed in
         try {
-          const profile = await userService.getCurrentUserProfile();
-          setUser(profile);
-          // Auto-redirect to dashboard on login
+          // Check for payment success param in URL
+          const params = new URLSearchParams(window.location.search);
+          const paymentSuccess = params.get('payment') === 'success';
+
+          if (paymentSuccess) {
+            setProcessingPayment(true);
+            const upgradedUser = await userService.upgradeToPro();
+            setUser(upgradedUser);
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+            setProcessingPayment(false);
+          } else {
+             const profile = await userService.getCurrentUserProfile();
+             setUser(profile);
+          }
+          
           setCurrentView('dashboard');
         } catch (e) {
           console.error("Error fetching user profile", e);
+          setProcessingPayment(false);
         }
       } else {
         // User is signed out
         setUser(null);
-        // CRITICAL FIX: Do NOT force navigation to 'landing' here.
-        // This allows the 'auth' view to remain active while the user is typing their credentials.
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []); // Empty dependency array ensures this only runs once on mount
+  }, []);
 
   const handleLoginSuccess = (userData: UserProfile) => {
     setUser(userData);
@@ -47,13 +60,16 @@ export default function App() {
 
   const handleLogout = async () => {
     await userService.logout();
-    setCurrentView('landing'); // Explicitly navigate to landing on logout
+    setCurrentView('landing'); 
   };
 
-  if (loading) {
+  if (loading || processingPayment) {
     return (
-      <div className="min-h-screen bg-[#050508] flex items-center justify-center">
+      <div className="min-h-screen bg-[#050508] flex flex-col gap-4 items-center justify-center">
         <Loader2 className="w-10 h-10 text-cyan-500 animate-spin" />
+        {processingPayment && (
+           <p className="text-gray-400 font-mono text-sm animate-pulse">Confirming Pro Subscription...</p>
+        )}
       </div>
     );
   }

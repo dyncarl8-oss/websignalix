@@ -1,7 +1,7 @@
 import React from 'react';
 import { SUPPORTED_PAIRS, TIMEFRAMES } from '../constants';
 import { CryptoPair } from '../types';
-import { Zap, Activity, Lock, Coins, BarChart2 } from 'lucide-react';
+import { Zap, Activity, Lock, Coins, BarChart2, Crown } from 'lucide-react';
 
 interface SidebarProps {
   selectedPair: CryptoPair;
@@ -12,6 +12,7 @@ interface SidebarProps {
   onAnalyze: () => void;
   isAnalyzing: boolean;
   onOpenPricing: () => void;
+  isPro?: boolean; // Optional prop for backward compat if needed, though Dashboard logic usually handles passing props
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -22,7 +23,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   credits,
   onAnalyze,
   isAnalyzing,
-  onOpenPricing
+  onOpenPricing,
+  isPro
 }) => {
   return (
     <div className="w-full lg:w-80 flex flex-col gap-6 p-4 border-r border-cyber-border bg-cyber-dark/50 overflow-y-auto h-full scrollbar-hide">
@@ -40,19 +42,27 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Credit Status */}
       <div className="glass-panel p-4 rounded-lg relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-          <Zap className="w-12 h-12" />
+          {isPro ? <Crown className="w-12 h-12" /> : <Zap className="w-12 h-12" />}
         </div>
         <div className="flex justify-between items-center mb-2">
-          <span className="text-gray-400 text-xs font-mono uppercase">Neural Credits</span>
-          <Coins className="w-4 h-4 text-yellow-500" />
+          <span className="text-gray-400 text-xs font-mono uppercase">{isPro ? 'Membership' : 'Neural Credits'}</span>
+          {isPro ? <Crown className="w-4 h-4 text-yellow-500" /> : <Coins className="w-4 h-4 text-yellow-500" />}
         </div>
-        <div className="text-2xl font-bold font-mono text-white mb-1">{credits} <span className="text-sm text-gray-500 font-sans font-normal">available</span></div>
-        <button 
-          onClick={onOpenPricing}
-          className="text-xs text-cyber-cyan hover:text-white transition-colors underline decoration-dotted"
-        >
-          Get Unlimited Access &rarr;
-        </button>
+        
+        {isPro ? (
+           <div className="text-2xl font-bold font-mono text-yellow-500 mb-1">PRO <span className="text-sm text-gray-500 font-sans font-normal">active</span></div>
+        ) : (
+           <div className="text-2xl font-bold font-mono text-white mb-1">{credits} <span className="text-sm text-gray-500 font-sans font-normal">available</span></div>
+        )}
+
+        {!isPro && (
+          <button 
+            onClick={onOpenPricing}
+            className="text-xs text-cyber-cyan hover:text-white transition-colors underline decoration-dotted"
+          >
+            Get Unlimited Access &rarr;
+          </button>
+        )}
       </div>
 
       {/* Pair Selector */}
@@ -104,11 +114,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Action Button */}
       <button
         onClick={onAnalyze}
-        disabled={isAnalyzing || credits <= 0}
+        disabled={isAnalyzing || (!isPro && credits <= 0)}
         className={`w-full py-4 rounded font-bold text-sm tracking-widest uppercase transition-all duration-300 relative overflow-hidden group ${
           isAnalyzing 
             ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700' 
-            : credits > 0 
+            : (isPro || credits > 0)
               ? 'bg-cyber-cyan/10 border border-cyber-cyan text-cyber-cyan hover:bg-cyber-cyan hover:text-black shadow-[0_0_20px_rgba(0,243,255,0.15)] hover:shadow-[0_0_30px_rgba(0,243,255,0.4)]'
               : 'bg-red-900/20 border border-red-800 text-red-500 cursor-not-allowed'
         }`}
@@ -117,7 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <span className="flex items-center justify-center gap-2">
             <BarChart2 className="animate-bounce w-4 h-4" /> Processing...
           </span>
-        ) : credits > 0 ? (
+        ) : (isPro || credits > 0) ? (
           <span className="relative z-10 flex items-center justify-center gap-2">
             <Zap className="w-4 h-4" /> Initiate Scan
           </span>

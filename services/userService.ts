@@ -24,6 +24,7 @@ const mapUserToProfile = (firebaseUser: User, extraData: any): UserProfile => {
     email: firebaseUser.email || '',
     photoURL: firebaseUser.photoURL || null,
     credits: extraData?.credits ?? INITIAL_CREDITS,
+    isPro: extraData?.isPro || false,
     joinedAt: extraData?.joinedAt || Date.now()
   };
 };
@@ -37,7 +38,6 @@ export const userService = {
     const user = userCredential.user;
 
     // Fetch user details (credits) from Firestore
-    // Wrap in try/catch to handle permission errors gracefully
     try {
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
@@ -45,19 +45,19 @@ export const userService = {
       if (userDoc.exists()) {
         return mapUserToProfile(user, userDoc.data());
       } else {
-        // Edge case: Auth exists but DB doc missing, create it
         const newProfile = {
           name: email.split('@')[0],
           email: email,
           credits: INITIAL_CREDITS,
+          isPro: false,
           joinedAt: Date.now()
         };
         await setDoc(userDocRef, newProfile);
         return mapUserToProfile(user, newProfile);
       }
     } catch (error: any) {
-      console.warn("Firestore access failed (likely permissions). Using temporary auth profile.", error);
-      return mapUserToProfile(user, { credits: INITIAL_CREDITS });
+      console.warn("Firestore access failed. Using temporary auth profile.", error);
+      return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
     }
   },
 
@@ -72,13 +72,14 @@ export const userService = {
       name: name || email.split('@')[0],
       email: email,
       credits: INITIAL_CREDITS,
+      isPro: false,
       joinedAt: Date.now()
     };
 
     try {
       await setDoc(doc(db, "users", user.uid), userProfileData);
     } catch (error) {
-      console.warn("Failed to create Firestore document (permissions). Proceeding with auth only.", error);
+      console.warn("Failed to create Firestore document.", error);
     }
 
     return mapUserToProfile(user, userProfileData);
@@ -97,20 +98,19 @@ export const userService = {
       if (userDoc.exists()) {
         return mapUserToProfile(user, userDoc.data());
       } else {
-        // First time Google login - create DB entry
         const newProfile = {
           name: user.displayName || 'Google User',
           email: user.email,
           credits: INITIAL_CREDITS,
+          isPro: false,
           joinedAt: Date.now()
         };
         await setDoc(userDocRef, newProfile);
         return mapUserToProfile(user, newProfile);
       }
     } catch (error: any) {
-      console.warn("Firestore access failed (likely permissions). Using temporary auth profile.", error);
-      // Fallback: Return profile based on Auth data only so user can still log in
-      return mapUserToProfile(user, { credits: INITIAL_CREDITS });
+      console.warn("Firestore access failed.", error);
+      return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
     }
   },
 
@@ -119,13 +119,32 @@ export const userService = {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
     
+    // Pro users should not really need this, but we keep it for consistency
     try {
       const userDocRef = doc(db, "users", currentUser.uid);
       await updateDoc(userDocRef, {
         credits: newAmount
       });
     } catch (e) {
-      console.warn("Could not persist credit update (likely permissions)", e);
+      console.warn("Could not persist credit update", e);
+    }
+  },
+
+  // Upgrade to Pro (Called after successful payment)
+  async upgradeToPro(): Promise<UserProfile | null> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return null;
+
+    try {
+      const userDocRef = doc(db, "users", currentUser.uid);
+      const updates = { isPro: true, credits: 999999 }; // Flag and logic safety
+      await updateDoc(userDocRef, updates);
+      
+      const updatedDoc = await getDoc(userDocRef);
+      return mapUserToProfile(currentUser, updatedDoc.data());
+    } catch (e) {
+      console.error("Failed to upgrade user to Pro", e);
+      throw e;
     }
   },
 
@@ -145,10 +164,9 @@ export const userService = {
         return mapUserToProfile(user, userDoc.data());
       }
     } catch (error) {
-      console.warn("Firestore access failed. Using auth data fallback.");
+      console.warn("Firestore access failed.");
     }
     
-    // Fallback if doc missing or permission denied
-    return mapUserToProfile(user, { credits: INITIAL_CREDITS });
+    return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
   }
 };
