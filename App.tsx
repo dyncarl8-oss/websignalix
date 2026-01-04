@@ -19,39 +19,62 @@ export default function App() {
   // Listen for Firebase Auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
       if (firebaseUser) {
-        // User is signed in
+        // User is signed in with Firebase, but we need to check if they are verified.
+        // We reload the user to get the latest emailVerified status just in case.
         try {
-          // Check for payment success param in URL
-          const params = new URLSearchParams(window.location.search);
-          const paymentSuccess = params.get('payment') === 'success';
-
-          if (paymentSuccess) {
-            setProcessingPayment(true);
-            const upgradedUser = await userService.upgradeToPro();
-            setUser(upgradedUser);
-            // Clean URL
-            window.history.replaceState({}, '', window.location.pathname);
-            setProcessingPayment(false);
-          } else {
-             const profile = await userService.getCurrentUserProfile();
-             setUser(profile);
-          }
-          
-          setCurrentView('dashboard');
+          await firebaseUser.reload();
         } catch (e) {
-          console.error("Error fetching user profile", e);
-          setProcessingPayment(false);
+          // ignore reload error (network etc)
+        }
+
+        if (firebaseUser.emailVerified) {
+          try {
+            // Check for payment success param in URL
+            const params = new URLSearchParams(window.location.search);
+            const paymentSuccess = params.get('payment') === 'success';
+
+            if (paymentSuccess) {
+              setProcessingPayment(true);
+              const upgradedUser = await userService.upgradeToPro();
+              setUser(upgradedUser);
+              // Clean URL
+              window.history.replaceState({}, '', window.location.pathname);
+              setProcessingPayment(false);
+            } else {
+               const profile = await userService.getCurrentUserProfile();
+               setUser(profile);
+            }
+            
+            // Only switch to dashboard if we weren't already there or landing
+            if (currentView === 'auth' || currentView === 'landing') {
+               setCurrentView('dashboard');
+            }
+          } catch (e) {
+            console.error("Error fetching user profile", e);
+            setUser(null);
+            setProcessingPayment(false);
+          }
+        } else {
+          // Email not verified. Treat as logged out for the app state, 
+          // allowing AuthPage to handle the "Verify Sent" view or Login errors.
+          setUser(null);
+          // We do not force setCurrentView here, preserving the user's location (e.g. AuthPage)
         }
       } else {
         // User is signed out
         setUser(null);
+        // If they were on dashboard, kick them to landing
+        if (currentView === 'dashboard') {
+          setCurrentView('landing');
+        }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentView]); // Add currentView as dep to correctly handle redirections
 
   const handleLoginSuccess = (userData: UserProfile) => {
     setUser(userData);

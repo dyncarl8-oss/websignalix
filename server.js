@@ -266,16 +266,8 @@ app.post('/api/create-checkout', async (req, res) => {
 
 // --- SUBSCRIPTION MANAGEMENT ---
 
-// GET /api/subscription?email=...
-app.get('/api/subscription', async (req, res) => {
-  const { email } = req.query;
-  const polarToken = process.env.POLAR_ACCESS_TOKEN;
-
-  if (!polarToken || !email) {
-    return res.status(400).json({ error: 'Missing token or email' });
-  }
-
-  try {
+// Helper to fetch Polar Data
+const fetchPolarData = async (email, polarToken) => {
     // 1. Find Customer by Email
     const customerSearch = await fetch(`https://sandbox-api.polar.sh/v1/customers?email=${encodeURIComponent(email)}`, {
       headers: { 'Authorization': `Bearer ${polarToken}` }
@@ -286,9 +278,7 @@ app.get('/api/subscription', async (req, res) => {
     const customers = await customerSearch.json();
     const customer = customers.items?.[0];
 
-    if (!customer) {
-      return res.json({ active: false, message: 'No customer found' });
-    }
+    if (!customer) return null;
 
     // 2. List Subscriptions for Customer
     const subResponse = await fetch(`https://sandbox-api.polar.sh/v1/subscriptions?customer_id=${customer.id}`, {
@@ -297,7 +287,25 @@ app.get('/api/subscription', async (req, res) => {
 
     if (!subResponse.ok) throw new Error('Failed to fetch subscriptions');
 
-    const subs = await subResponse.json();
+    return await subResponse.json();
+};
+
+// GET /api/subscription?email=... (For displaying details)
+app.get('/api/subscription', async (req, res) => {
+  const { email } = req.query;
+  const polarToken = process.env.POLAR_ACCESS_TOKEN;
+
+  if (!polarToken || !email) {
+    return res.status(400).json({ error: 'Missing token or email' });
+  }
+
+  try {
+    const subs = await fetchPolarData(email, polarToken);
+
+    if (!subs) {
+      return res.json({ active: false, message: 'No customer found' });
+    }
+
     // Find active subscription
     const activeSub = subs.items?.find(s => s.status === 'active');
 
@@ -331,6 +339,51 @@ app.get('/api/subscription', async (req, res) => {
   } catch (error) {
     console.error('Subscription Fetch Error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// POST /api/sync-subscription (For logic check: Is User Pro?)
+app.post('/api/sync-subscription', async (req, res) => {
+  const { email } = req.body;
+  const polarToken = process.env.POLAR_ACCESS_TOKEN;
+
+  if (!polarToken || !email) {
+    return res.status(400).json({ error: 'Missing Data' });
+  }
+
+  try {
+    const subs = await fetchPolarData(email, polarToken);
+
+    if (!subs || !subs.items || subs.items.length === 0) {
+      return res.json({ isPro: false });
+    }
+
+    // Check if any subscription is valid
+    // Valid = Status is 'active' OR 'trialing'
+    // OR Status is 'canceled' but current_period_end > now
+    
+    const now = new Date();
+    
+    const validSub = subs.items.find(s => {
+      if (s.status === 'active' || s.status === 'trialing') return true;
+      
+      if (s.current_period_end) {
+        const endDate = new Date(s.current_period_end);
+        if (endDate > now) return true;
+      }
+      
+      return false;
+    });
+
+    if (validSub) {
+      res.json({ isPro: true });
+    } else {
+      res.json({ isPro: false });
+    }
+
+  } catch (error) {
+    console.error('Sync Error:', error);
+    res.status(500).json({ error: 'Sync failed' });
   }
 });
 

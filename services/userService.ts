@@ -4,7 +4,9 @@ import {
   signInWithPopup, 
   GoogleAuthProvider,
   signOut,
-  User
+  User,
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { 
   doc, 
@@ -15,6 +17,7 @@ import {
 import { auth, db } from "../firebaseConfig";
 import { UserProfile } from '../types';
 import { INITIAL_CREDITS } from '../constants';
+import { paymentService } from './paymentService';
 
 // Helper to convert Firebase User + Firestore Data to our UserProfile type
 const mapUserToProfile = (firebaseUser: User, extraData: any): UserProfile => {
@@ -36,6 +39,12 @@ export const userService = {
     
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+
+    // Email Verification Check
+    if (!user.emailVerified) {
+      await signOut(auth);
+      throw new Error("Email not verified. Please check your inbox.");
+    }
 
     // Fetch user details (credits) from Firestore
     try {
@@ -62,11 +71,14 @@ export const userService = {
   },
 
   // Register new user
-  async register(email: string, name?: string, password?: string): Promise<UserProfile> {
+  async register(email: string, name?: string, password?: string): Promise<void> {
     if (!password) password = "defaultPassword123!"; 
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+
+    // Send Verification Email
+    await sendEmailVerification(user);
 
     const userProfileData = {
       name: name || email.split('@')[0],
@@ -82,10 +94,16 @@ export const userService = {
       console.warn("Failed to create Firestore document.", error);
     }
 
-    return mapUserToProfile(user, userProfileData);
+    // Sign out immediately so they can't access dashboard until verified
+    await signOut(auth);
   },
 
-  // Google Login
+  // Password Reset
+  async resetPassword(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email);
+  },
+
+  // Google Login (Auto-verified usually)
   async googleLogin(): Promise<UserProfile> {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
@@ -153,15 +171,42 @@ export const userService = {
     await signOut(auth);
   },
 
-  // Get Current Profile
+  // Get Current Profile with Auto-Sync
   async getCurrentUserProfile(): Promise<UserProfile | null> {
     const user = auth.currentUser;
     if (!user) return null;
 
+    // Check verification status here too
+    if (!user.emailVerified) {
+      return null;
+    }
+
     try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
       if (userDoc.exists()) {
-        return mapUserToProfile(user, userDoc.data());
+        const profileData = userDoc.data();
+        let currentProfile = mapUserToProfile(user, profileData);
+
+        // SYNC CHECK: If locally Pro, verify with Polar backend
+        if (currentProfile.isPro && currentProfile.email) {
+           try {
+             const status = await paymentService.checkSubscriptionStatus(currentProfile.email);
+             
+             if (!status.isPro) {
+                // EXPIRED! Downgrade
+                console.log("Subscription expired. Downgrading user...");
+                await updateDoc(userDocRef, { isPro: false, credits: 3 }); 
+                currentProfile.isPro = false;
+                currentProfile.credits = 3;
+             }
+           } catch (err) {
+             console.warn("Failed to sync subscription status, keeping local state.", err);
+           }
+        }
+
+        return currentProfile;
       }
     } catch (error) {
       console.warn("Firestore access failed.");

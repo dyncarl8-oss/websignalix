@@ -47,6 +47,21 @@ export const paymentService = {
     return await res.json();
   },
 
+  async checkSubscriptionStatus(email: string): Promise<{ isPro: boolean }> {
+    try {
+      const res = await fetch('/api/sync-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (!res.ok) return { isPro: false }; // Fail safe
+      return await res.json();
+    } catch (e) {
+      console.error("Sync failed", e);
+      return { isPro: false }; // Fail safe
+    }
+  },
+
   async cancelSubscription(subscriptionId: string): Promise<void> {
     const res = await fetch('/api/subscription/cancel', {
       method: 'POST',
