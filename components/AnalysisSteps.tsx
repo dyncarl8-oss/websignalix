@@ -16,14 +16,14 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div className="bg-[#0b0b10] border border-gray-800 rounded-xl overflow-hidden mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-xl">
+    <div className="bg-[#0b0b10] border border-gray-800 rounded-xl overflow-hidden mb-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out shadow-xl">
       <div 
         className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors border-b border-gray-900/50"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-4 flex-1">
           {/* Icon Box */}
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-500 ${
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-700 ${
             status === 'loading' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
             status === 'complete' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
           }`}>
@@ -34,13 +34,13 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
           {/* Title & Status */}
           <div className="flex flex-col flex-1">
             <div className="flex items-center gap-3">
-              <h3 className={`font-bold text-sm tracking-wide ${
+              <h3 className={`font-bold text-sm tracking-wide transition-colors duration-500 ${
                 status === 'loading' ? 'text-purple-400' : 'text-gray-200'
               }`}>
                 {title}
               </h3>
               {duration && status === 'complete' && (
-                <span className="text-xs font-mono font-bold text-gray-300 bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/50 shadow-sm">
+                <span className="text-xs font-mono font-bold text-gray-300 bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/50 shadow-sm animate-in fade-in zoom-in duration-500">
                    {duration.toFixed(2)}s
                 </span>
               )}
@@ -64,7 +64,7 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
       </div>
 
       {isExpanded && children && (
-        <div className="p-4 bg-black/20 border-t border-gray-900/30">
+        <div className="p-4 bg-black/20 border-t border-gray-900/30 animate-in fade-in duration-700">
           {children}
         </div>
       )}

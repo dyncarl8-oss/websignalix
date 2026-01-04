@@ -106,8 +106,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     try {
       const startTime = Date.now();
       
-      // Delay for effect (1.5s)
-      await new Promise(r => setTimeout(r, 1500));
+      // DRAMATIC DELAY: Data Fetching (2.5 seconds)
+      await new Promise(r => setTimeout(r, 2500));
       
       const ohlc = await fetchOHLCData(pair.base, pair.quote, tf);
       const dataDuration = (Date.now() - startTime) / 1000;
@@ -120,10 +120,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
       // 2. Technical Analysis
       const step2Id = addFeedItem('step-technical', {}, 'loading');
-      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 200);
 
-      // Simulation of heavy computation
-      await new Promise(r => setTimeout(r, 2500)); 
+      // DRAMATIC DELAY: Calculating Indicators (4 seconds)
+      // This simulates "crunching numbers"
+      await new Promise(r => setTimeout(r, 4000)); 
       
       const techStartTime = Date.now();
       const indicators = computeIndicators(ohlc);
@@ -137,10 +138,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
       // 3. Signal Aggregation
       const step3Id = addFeedItem('step-aggregation', {}, 'loading');
-      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 200);
 
-      // Simulation of weighing signals
-      await new Promise(r => setTimeout(r, 2200)); 
+      // DRAMATIC DELAY: Weighing Signals (3.5 seconds)
+      // Simulates the system balancing bullish/bearish factors
+      await new Promise(r => setTimeout(r, 3500)); 
       
       // Calculate aggregation locally
       let up = 0, down = 0, neutral = 0;
@@ -182,17 +184,20 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
       // 4. AI Deep Analysis
       const step4Id = addFeedItem('step-ai', {}, 'loading');
-      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 200);
       
       const aiStartTime = Date.now();
       const analysis = await analyzeMarket(pair.name, tf, ohlc, indicators);
       const aiDuration = (Date.now() - aiStartTime) / 1000;
 
       // Simulate streaming thought process
+      // SLOWED DOWN SIGNIFICANTLY for "Thoughtful" effect
       const fullThought = analysis.thoughtProcess || analysis.summary;
       let currentText = "";
       const chars = fullThought.split('');
-      const chunkSize = 5; 
+      
+      // Reduced chunk size and increased delay for smoother, slower typing
+      const chunkSize = 2; 
       
       for (let i = 0; i < chars.length; i += chunkSize) {
         currentText += chars.slice(i, i + chunkSize).join('');
@@ -201,9 +206,15 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         });
         
         if (i % 10 === 0) scrollToBottom();
-        const delay = 5 + Math.random() * 10;
+        
+        // Random delay between 20ms and 50ms per small chunk
+        // This makes the text stream take several seconds to complete
+        const delay = 20 + Math.random() * 30;
         await new Promise(r => setTimeout(r, delay));
       }
+
+      // Add a small pause after thinking finishes before marking complete
+      await new Promise(r => setTimeout(r, 800));
 
       updateFeedItem(step4Id, {
         status: 'complete',
@@ -213,7 +224,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
       // CHECK VERDICT
       if (analysis.verdict === 'NEUTRAL') {
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 1000));
         addFeedItem('system-message', { 
           text: `Analysis Inconclusive: Market conditions are completely flat. No actionable signal detected.` 
         });
@@ -226,7 +237,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         }
 
         // 5. Final Verdict
-        await new Promise(r => setTimeout(r, 800)); 
+        // LONG DELAY (2 seconds) for dramatic reveal
+        await new Promise(r => setTimeout(r, 2000)); 
+        
         addFeedItem('step-verdict', { result: analysis });
         setSessionState('complete');
         setTimeout(scrollToBottom, 100);
