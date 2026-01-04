@@ -1,6 +1,10 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,9 +23,14 @@ app.post('/api/create-checkout', async (req, res) => {
   try {
     const { customerEmail, userId } = req.body;
     
-    // In production, use environment variables for these
-    // Updated to new sandbox token provided by user
-    const polarToken = 'polar_oat_m0ls7ylysaLF9aWJfXOKSrTg3C2UYL64rPcIx13rk20';
+    // Load Token from Env
+    const polarToken = process.env.POLAR_ACCESS_TOKEN;
+    
+    if (!polarToken) {
+      console.error('Missing POLAR_ACCESS_TOKEN in .env file');
+      return res.status(500).json({ error: 'Server configuration error: Missing Payment Token' });
+    }
+
     const productId = '19c116dd-58c2-4df0-8904-c1cb6d617e95';
     
     // Determine the base URL for the success redirect
@@ -41,6 +50,7 @@ app.post('/api/create-checkout', async (req, res) => {
     }
 
     // Call Polar Sandbox API
+    // Note: If you move to production, change this URL to https://api.polar.sh/v1/checkouts/
     const response = await fetch('https://sandbox-api.polar.sh/v1/checkouts/', {
       method: 'POST',
       headers: {
