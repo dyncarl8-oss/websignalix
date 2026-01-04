@@ -27,10 +27,42 @@ const MODEL_CHAIN = [
   'gemini-2.5-flash'
 ];
 
+// Helper to reliably parse JSON even if the model adds markdown or junk
+const cleanAndParseJSON = (text) => {
+  if (!text) return null;
+  
+  // 1. Try direct parse
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    // 2. Strip markdown code blocks (```json ... ```)
+    let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    try {
+      return JSON.parse(cleaned);
+    } catch (e2) {
+      // 3. Extract strictly between first { and last }
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        cleaned = text.substring(firstBrace, lastBrace + 1);
+        try {
+          return JSON.parse(cleaned);
+        } catch (e3) {
+          throw new Error("Failed to extract valid JSON object from response.");
+        }
+      }
+      throw new Error("Response did not contain a JSON object.");
+    }
+  }
+};
+
 app.post('/api/analyze', async (req, res) => {
   const { pairName, timeframe, ohlc, indicators } = req.body;
   
-  console.log(`[Server] Starting Market Analysis for ${pairName} (${timeframe})`);
+  // Clean Time log
+  const timeLog = new Date().toISOString().split('T')[1].substring(0,8);
+  console.log(`[${timeLog}] [Analysis] Starting for ${pairName} (${timeframe})...`);
 
   if (!process.env.API_KEY) {
     console.error("[Server] Critical Error: API Key is missing.");
@@ -55,54 +87,50 @@ app.post('/api/analyze', async (req, res) => {
     
     Current Price: ${ohlc[ohlc.length-1].close}
     
-    Technical Indicators (Computed):
+    Technical Indicators:
     - RSI (14): ${indicators.rsi.value}
     - SMA (20): ${indicators.sma20.toFixed(2)}
     - SMA (50): ${indicators.sma50.toFixed(2)}
-    - SMA (200): ${indicators.sma200.toFixed(2)}
-    - Bollinger Bands: Upper ${indicators.bollinger.upper.toFixed(2)}, Lower ${indicators.bollinger.lower.toFixed(2)}
-    - MACD: Value ${indicators.macd.value.toFixed(4)}
+    - Bollinger Bands: Width ${indicators.bollinger.width.toFixed(2)}%
+    - MACD: ${indicators.macd.value.toFixed(4)}
 
     Recent Price Action (Last 15 candles):
-    ${JSON.stringify(recentOHLC, null, 2)}
+    ${JSON.stringify(recentOHLC)}
 
-    Task:
-    1. First, engage in a deep "thought process".
-       CRITICAL: Write this as raw text only. No markdown.
-    2. Formulate a final verdict: UP, DOWN, or NEUTRAL.
-       
-    RULES FOR VERDICT:
-    - If you see a CLEAR setup (UP or DOWN), your Confidence score MUST be between 90 and 99. DO NOT output a confidence below 90 for UP/DOWN signals.
-    - If the market is choppy, unclear, or conflicting, you MUST output 'NEUTRAL'. In this case, confidence does not matter (set it to 0).
-    - Users are paying for this. Do not guess. If unsure, say NEUTRAL.
+    Your Goal: Provide a clear, institutional-grade market analysis.
+
+    Requirements:
+    1. 'thoughtProcess': A string containing your raw internal analysis. Be critical and specific.
+    2. 'verdict': ONE of ['UP', 'DOWN', 'NEUTRAL']. 
+       - UP/DOWN requires >90% confidence based on clear confluence.
+       - If choppy/unclear, use NEUTRAL.
+    3. 'confidence': 0-100.
+    4. 'summary': concise executive summary.
     
-    3. Estimate the duration for this move based on the ${timeframe} timeframe (e.g. "Next 4-8 Hours").
-    
-    Think deeply about market structure and risk.
+    Return ONLY valid JSON matching the schema.
   `;
 
   // Helper function to try models in sequence
   const tryGenerate = async (modelIndex) => {
     if (modelIndex >= MODEL_CHAIN.length) {
-      console.error("[Server] All models in the chain failed.");
-      throw new Error("All AI models failed to respond.");
+      console.error("[Server] All models exhausted. Analysis failed.");
+      throw new Error("All AI models failed to respond or were rate limited.");
     }
 
     const currentModel = MODEL_CHAIN[modelIndex];
-    console.log(`[Server] Attempting analysis with model [${modelIndex + 1}/${MODEL_CHAIN.length}]: ${currentModel}`);
-
+    
     try {
       const config = {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            thoughtProcess: { type: Type.STRING, description: "Your raw internal monologue. No markdown." },
+            thoughtProcess: { type: Type.STRING, description: "Your internal monologue analysis." },
             verdict: { type: Type.STRING, enum: ['UP', 'DOWN', 'NEUTRAL'] },
             confidence: { type: Type.NUMBER },
-            timeHorizon: { type: Type.STRING, description: "General horizon category e.g. 'Intraday'" },
-            predictionDuration: { type: Type.STRING, description: "Specific estimated duration e.g. 'Next 4 Hours'" },
-            summary: { type: Type.STRING, description: "A concise summary of the verdict for the user." },
+            timeHorizon: { type: Type.STRING },
+            predictionDuration: { type: Type.STRING },
+            summary: { type: Type.STRING },
             keyFactors: { type: Type.ARRAY, items: { type: Type.STRING } },
             riskWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
             entryZone: { type: Type.STRING },
@@ -113,44 +141,41 @@ app.post('/api/analyze', async (req, res) => {
         }
       };
 
-      console.log(`[Server] Sending request to ${currentModel}...`);
+      console.log(`[Server] Requesting ${currentModel} [${modelIndex + 1}/${MODEL_CHAIN.length}]...`);
+      
       const response = await ai.models.generateContent({
         model: currentModel,
         contents: prompt,
         config: config
       });
-      console.log(`[Server] Response received from ${currentModel}.`);
 
       const resultText = response.text;
-      if (!resultText) {
-        throw new Error(`Model ${currentModel} returned empty response.`);
-      }
-      
-      try {
-        const parsed = JSON.parse(resultText);
-        console.log(`[Server] Analysis successful with ${currentModel}. Verdict: ${parsed.verdict}`);
-        return parsed;
-      } catch (e) {
-        console.error(`[Server] JSON Parse Error for model ${currentModel}. Raw text:`, resultText);
-        throw new Error("Invalid JSON response from AI");
-      }
+      if (!resultText) throw new Error("Empty response text");
+
+      // Robust Parsing
+      const parsed = cleanAndParseJSON(resultText);
+      console.log(`[Server] Success: ${currentModel} -> Verdict: ${parsed.verdict}`);
+      return parsed;
 
     } catch (error) {
-       const errorMsg = error.message || JSON.stringify(error);
+       const errorMsg = error.message || "Unknown error";
        
-       if (
-        errorMsg.includes("leaked") || 
-        errorMsg.includes("API key") || 
-        errorMsg.includes("PERMISSION_DENIED") || 
-        errorMsg.includes("403")
-      ) {
-        console.error(`[Server] FATAL AUTH ERROR on ${currentModel}:`, errorMsg);
-        throw new Error(`FATAL: API Key issue. ${errorMsg}`);
-      }
+       // Handle specific error types for better logging
+       let failReason = "Unknown";
+       if (errorMsg.includes("429") || errorMsg.includes("quota")) failReason = "Rate Limit/Quota";
+       else if (errorMsg.includes("JSON")) failReason = "JSON Parse Error";
+       else if (errorMsg.includes("503") || errorMsg.includes("500")) failReason = "Model Overloaded";
+       else failReason = errorMsg;
 
-      console.warn(`[Server] Model ${currentModel} failed (recoverable). Error:`, errorMsg);
-      console.log(`[Server] Falling back to next model...`);
-      return tryGenerate(modelIndex + 1);
+       console.warn(`[Server] Failed: ${currentModel} -> ${failReason}`);
+       
+       // Stop if it's an Auth error (no point retrying)
+       if (errorMsg.includes("API key") || errorMsg.includes("403")) {
+          throw new Error("Invalid API Key configuration.");
+       }
+
+       // Retry with next model
+       return tryGenerate(modelIndex + 1);
     }
   };
 
@@ -158,7 +183,7 @@ app.post('/api/analyze', async (req, res) => {
     const result = await tryGenerate(0);
     res.json(result);
   } catch (error) {
-    console.error("[Server] Final Analysis Failure:", error.message);
+    console.error("[Server] Final Failure:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -178,10 +203,6 @@ app.post('/api/create-checkout', async (req, res) => {
 
     const productId = '19c116dd-58c2-4df0-8904-c1cb6d617e95';
     
-    // Determine the base URL for the success redirect
-    // 1. Prefer explicitly set BASE_URL env var (Best for Render)
-    // 2. Fallback to Request Origin header
-    // 3. Fallback to constructing from host header (Render uses x-forwarded-proto)
     let origin = process.env.BASE_URL;
     
     if (!origin) {
@@ -194,8 +215,6 @@ app.post('/api/create-checkout', async (req, res) => {
       }
     }
 
-    // Call Polar Sandbox API
-    // Note: If you move to production, change this URL to https://api.polar.sh/v1/checkouts/
     const response = await fetch('https://sandbox-api.polar.sh/v1/checkouts/', {
       method: 'POST',
       headers: {
