@@ -20,7 +20,8 @@ app.post('/api/create-checkout', async (req, res) => {
     const { customerEmail, userId } = req.body;
     
     // In production, use environment variables for these
-    const polarToken = 'polar_oat_dLVG0vuHzeUHjBlNpP5kM6cacxK9PW0iq7yHX2DVu9S';
+    // Updated to new sandbox token provided by user
+    const polarToken = 'polar_oat_m0ls7ylysaLF9aWJfXOKSrTg3C2UYL64rPcIx13rk20';
     const productId = '19c116dd-58c2-4df0-8904-c1cb6d617e95';
     
     // Determine the base URL for the success redirect
