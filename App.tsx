@@ -13,23 +13,27 @@ type ViewState = 'landing' | 'auth' | 'dashboard';
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewState>('landing');
   const [user, setUser] = useState<UserProfile | null>(null);
+  // We initialize loading to true to cover the initial Firebase handshake.
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
 
   // Listen for Firebase Auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
+      // NOTE: We do NOT set loading(true) here unconditionally. 
+      // Doing so causes the AuthPage to unmount/remount, losing the "Verify Email" state.
+
       if (firebaseUser) {
-        // User is signed in with Firebase, but we need to check if they are verified.
-        // We reload the user to get the latest emailVerified status just in case.
+        // User is signed in with Firebase.
         try {
           await firebaseUser.reload();
         } catch (e) {
-          // ignore reload error (network etc)
+          // ignore reload error
         }
 
         if (firebaseUser.emailVerified) {
+          // Only show loader if we are actually proceeding to fetch data/dashboard
+          setLoading(true); 
           try {
             // Check for payment success param in URL
             const params = new URLSearchParams(window.location.search);
@@ -39,7 +43,6 @@ export default function App() {
               setProcessingPayment(true);
               const upgradedUser = await userService.upgradeToPro();
               setUser(upgradedUser);
-              // Clean URL
               window.history.replaceState({}, '', window.location.pathname);
               setProcessingPayment(false);
             } else {
@@ -55,26 +58,28 @@ export default function App() {
             console.error("Error fetching user profile", e);
             setUser(null);
             setProcessingPayment(false);
+          } finally {
+            setLoading(false);
           }
         } else {
-          // Email not verified. Treat as logged out for the app state, 
-          // allowing AuthPage to handle the "Verify Sent" view or Login errors.
+          // Email not verified. 
+          // We treat this as "no user" for the app state, but we DO NOT show a loader.
+          // This keeps the AuthPage mounted so it can display the "Check Email" or error messages.
           setUser(null);
-          // We do not force setCurrentView here, preserving the user's location (e.g. AuthPage)
+          setLoading(false); 
         }
       } else {
         // User is signed out
         setUser(null);
-        // If they were on dashboard, kick them to landing
         if (currentView === 'dashboard') {
           setCurrentView('landing');
         }
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [currentView]); // Add currentView as dep to correctly handle redirections
+  }, [currentView]);
 
   const handleLoginSuccess = (userData: UserProfile) => {
     setUser(userData);
@@ -86,6 +91,7 @@ export default function App() {
     setCurrentView('landing'); 
   };
 
+  // Only show full screen loader if we are doing significant data fetching or initial load
   if (loading || processingPayment) {
     return (
       <div className="min-h-screen bg-[#050508] flex flex-col gap-4 items-center justify-center">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Mail, Lock, ArrowRight, CheckCircle2, ArrowLeft, KeyRound, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
+import { Activity, Mail, Lock, ArrowRight, CheckCircle2, ArrowLeft, KeyRound, AlertTriangle, RefreshCw, Loader2, Info } from 'lucide-react';
 import { userService } from '../services/userService';
 import { UserProfile } from '../types';
 
@@ -133,22 +133,30 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
           
           {/* VERIFY SENT MODE (Post-Signup) */}
           {mode === 'verify-sent' && (
-            <div className="text-center">
+            <div className="text-center animate-in fade-in zoom-in duration-300">
               <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
                  <CheckCircle2 className="w-8 h-8 text-green-400" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Check Your Inbox</h2>
-              <p className="text-gray-400 text-sm mb-4 leading-relaxed">
-                 We've sent a verification link to <span className="text-white font-mono block mt-1 bg-gray-800 rounded py-1">{email}</span>
+              <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                 We've sent a verification link to <span className="text-white font-mono block mt-2 bg-gray-800 rounded py-2 px-3 border border-gray-700">{email}</span>
               </p>
-              <div className="p-3 bg-yellow-900/20 border border-yellow-700/30 rounded mb-6">
-                 <p className="text-yellow-400 text-xs font-bold flex items-center justify-center gap-2">
-                    <AlertTriangle className="w-4 h-4" /> Please check your Spam folder!
-                 </p>
+              
+              <div className="bg-yellow-900/10 border border-yellow-700/30 rounded-lg p-4 mb-8 text-left">
+                 <div className="flex gap-3">
+                   <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                   <div>
+                     <h4 className="text-yellow-400 font-bold text-sm mb-1">Important: Check Spam Folder</h4>
+                     <p className="text-xs text-yellow-200/70 leading-relaxed">
+                       If you don't see the email within 1 minute, please check your <strong>Spam</strong> or <strong>Junk</strong> folder.
+                     </p>
+                   </div>
+                 </div>
               </div>
+
               <button 
                  onClick={() => { setMode('login'); setError(''); setShowResend(false); }}
-                 className="w-full h-12 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-bold transition-colors"
+                 className="w-full h-12 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-bold transition-colors border border-gray-700 hover:border-gray-600"
               >
                  Return to Login
               </button>
@@ -229,8 +237,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
                   </div>
 
                   {successMsg && (
-                    <div className="p-3 bg-green-900/30 border border-green-500/30 rounded text-green-400 text-xs text-center">
-                      {successMsg}
+                    <div className="p-3 bg-green-900/30 border border-green-500/30 rounded text-green-400 text-xs text-center flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" /> {successMsg}
                     </div>
                   )}
 
@@ -241,13 +249,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
                             <AlertTriangle className="w-3 h-3" /> {error}
                          </div>
                          {showResend && (
-                            <div className="w-full mt-1">
-                               <p className="text-[10px] text-gray-400 text-center mb-2">Did you miss the email? Check spam or:</p>
+                            <div className="w-full mt-2 pt-2 border-t border-red-500/20">
+                               <div className="flex items-start gap-2 mb-2 px-2">
+                                  <Info className="w-3 h-3 text-red-300 mt-0.5" />
+                                  <p className="text-[10px] text-red-200/70 text-left leading-tight">
+                                     Check your <strong>Spam folder</strong> if you don't see the email.
+                                  </p>
+                               </div>
                                <button
                                  type="button"
                                  onClick={handleResendVerification}
                                  disabled={resendLoading}
-                                 className="w-full py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs rounded border border-red-500/30 flex items-center justify-center gap-2 transition-colors"
+                                 className="w-full py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs rounded border border-red-500/30 flex items-center justify-center gap-2 transition-colors font-bold"
                                >
                                  {resendLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
                                  Resend Verification Email
