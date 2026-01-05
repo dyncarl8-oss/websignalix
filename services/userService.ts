@@ -32,43 +32,88 @@ const mapUserToProfile = (firebaseUser: User, extraData: any): UserProfile => {
   };
 };
 
+// Helper to clean up Firebase errors
+const getFriendlyErrorMessage = (error: any): string => {
+  // Pass through our custom internal flags
+  if (error.message === 'EMAIL_NOT_VERIFIED') return 'EMAIL_NOT_VERIFIED';
+  if (error.message === 'ALREADY_VERIFIED') return 'ALREADY_VERIFIED';
+
+  const code = error.code;
+  
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials': // Some SDK versions use this
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+      return 'Invalid email or password.';
+    case 'auth/email-already-in-use':
+      return 'That email is already registered. Please login.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign in was canceled.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled.';
+    default:
+      // Robust cleaning for unhandled codes
+      if (error.message) {
+         // Regex to strip "Firebase: Error (auth/xxx)." pattern
+         const cleanMsg = error.message.replace(/^Firebase:\s*(Error\s*)?\(auth\/[\w-]+\)\.?\s*/i, '');
+         if (cleanMsg && cleanMsg.trim().length > 0) {
+            // Capitalize first letter
+            return cleanMsg.charAt(0).toUpperCase() + cleanMsg.slice(1);
+         }
+      }
+      return 'An unexpected error occurred.';
+  }
+};
+
 export const userService = {
   // Login with Email/Password
   async login(email: string, password?: string): Promise<UserProfile> {
     if (!password) throw new Error("Password required");
     
-    // 1. Attempt Sign In
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // 2. Email Verification Check
-    if (!user.emailVerified) {
-      await signOut(auth);
-      // Throw a specific string we can catch in the UI
-      throw new Error("EMAIL_NOT_VERIFIED");
-    }
-
-    // 3. Fetch user details (credits) from Firestore
     try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
+      // 1. Attempt Sign In
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-      if (userDoc.exists()) {
-        return mapUserToProfile(user, userDoc.data());
-      } else {
-        const newProfile = {
-          name: email.split('@')[0],
-          email: email,
-          credits: INITIAL_CREDITS,
-          isPro: false,
-          joinedAt: Date.now()
-        };
-        await setDoc(userDocRef, newProfile);
-        return mapUserToProfile(user, newProfile);
+      // 2. Email Verification Check
+      if (!user.emailVerified) {
+        await signOut(auth);
+        throw new Error("EMAIL_NOT_VERIFIED");
+      }
+
+      // 3. Fetch user details (credits) from Firestore
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          return mapUserToProfile(user, userDoc.data());
+        } else {
+          const newProfile = {
+            name: email.split('@')[0],
+            email: email,
+            credits: INITIAL_CREDITS,
+            isPro: false,
+            joinedAt: Date.now()
+          };
+          await setDoc(userDocRef, newProfile);
+          return mapUserToProfile(user, newProfile);
+        }
+      } catch (error: any) {
+        console.warn("Firestore access failed. Using temporary auth profile.", error);
+        return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
       }
     } catch (error: any) {
-      console.warn("Firestore access failed. Using temporary auth profile.", error);
-      return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
+      throw new Error(getFriendlyErrorMessage(error));
     }
   },
 
@@ -76,28 +121,32 @@ export const userService = {
   async register(email: string, name?: string, password?: string): Promise<void> {
     if (!password) password = "defaultPassword123!"; 
 
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // Send Verification Email
-    await sendEmailVerification(user);
-
-    const userProfileData = {
-      name: name || email.split('@')[0],
-      email: email,
-      credits: INITIAL_CREDITS,
-      isPro: false,
-      joinedAt: Date.now()
-    };
-
     try {
-      await setDoc(doc(db, "users", user.uid), userProfileData);
-    } catch (error) {
-      console.warn("Failed to create Firestore document.", error);
-    }
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-    // Sign out immediately so they can't access dashboard until verified
-    await signOut(auth);
+      // Send Verification Email
+      await sendEmailVerification(user);
+
+      const userProfileData = {
+        name: name || email.split('@')[0],
+        email: email,
+        credits: INITIAL_CREDITS,
+        isPro: false,
+        joinedAt: Date.now()
+      };
+
+      try {
+        await setDoc(doc(db, "users", user.uid), userProfileData);
+      } catch (error) {
+        console.warn("Failed to create Firestore document.", error);
+      }
+
+      // Sign out immediately so they can't access dashboard until verified
+      await signOut(auth);
+    } catch (error: any) {
+      throw new Error(getFriendlyErrorMessage(error));
+    }
   },
 
   // Resend Verification Email
@@ -105,50 +154,62 @@ export const userService = {
   async resendVerification(email: string, password?: string): Promise<void> {
     if (!password) throw new Error("Password required to resend verification.");
     
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-    if (user.emailVerified) {
-       // Already verified, just return
-       await signOut(auth);
-       throw new Error("ALREADY_VERIFIED");
+      if (user.emailVerified) {
+         // Already verified, just return
+         await signOut(auth);
+         throw new Error("ALREADY_VERIFIED");
+      }
+
+      await sendEmailVerification(user);
+      await signOut(auth);
+    } catch (error: any) {
+      throw new Error(getFriendlyErrorMessage(error));
     }
-
-    await sendEmailVerification(user);
-    await signOut(auth);
   },
 
   // Password Reset
   async resetPassword(email: string): Promise<void> {
-    await sendPasswordResetEmail(auth, email);
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+      throw new Error(getFriendlyErrorMessage(error));
+    }
   },
 
   // Google Login (Auto-verified usually)
   async googleLogin(): Promise<UserProfile> {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-
     try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
-      if (userDoc.exists()) {
-        return mapUserToProfile(user, userDoc.data());
-      } else {
-        const newProfile = {
-          name: user.displayName || 'Google User',
-          email: user.email,
-          credits: INITIAL_CREDITS,
-          isPro: false,
-          joinedAt: Date.now()
-        };
-        await setDoc(userDocRef, newProfile);
-        return mapUserToProfile(user, newProfile);
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          return mapUserToProfile(user, userDoc.data());
+        } else {
+          const newProfile = {
+            name: user.displayName || 'Google User',
+            email: user.email,
+            credits: INITIAL_CREDITS,
+            isPro: false,
+            joinedAt: Date.now()
+          };
+          await setDoc(userDocRef, newProfile);
+          return mapUserToProfile(user, newProfile);
+        }
+      } catch (error: any) {
+        console.warn("Firestore access failed.", error);
+        return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
       }
     } catch (error: any) {
-      console.warn("Firestore access failed.", error);
-      return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
+      throw new Error(getFriendlyErrorMessage(error));
     }
   },
 

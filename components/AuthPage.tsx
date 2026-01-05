@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Mail, Lock, ArrowRight, CheckCircle2, ArrowLeft, KeyRound, AlertTriangle, RefreshCw, Loader2, Info } from 'lucide-react';
+import { Activity, Mail, Lock, ArrowRight, CheckCircle2, ArrowLeft, AlertTriangle, RefreshCw, Loader2, Info } from 'lucide-react';
 import { userService } from '../services/userService';
 import { UserProfile } from '../types';
 
@@ -12,7 +12,11 @@ type AuthMode = 'login' | 'signup' | 'forgot-password' | 'verify-sent';
 
 const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
   const [mode, setMode] = useState<AuthMode>('login');
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Separate loading states to prevent UI flicker on unrelated buttons
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,7 +28,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsEmailLoading(true);
     setError('');
     setShowResend(false);
     
@@ -36,26 +40,26 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
         setError('Email not verified yet.');
         setShowResend(true);
       } else {
-        setError(err.message || 'Authentication failed');
+        // The error message is already cleaned by userService
+        setError(err.message);
       }
     } finally {
-      setIsLoading(false);
+      setIsEmailLoading(false);
     }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsEmailLoading(true);
     setError('');
 
     try {
       await userService.register(email, undefined, password);
-      // Explicitly switch mode to show the success message
       setMode('verify-sent');
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setIsEmailLoading(false);
     }
   };
 
@@ -64,14 +68,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
     try {
       await userService.resendVerification(email, password);
       setSuccessMsg("Verification email resent! Please check your inbox and spam folder.");
-      setShowResend(false); // Hide the button, show success
+      setShowResend(false);
       setError('');
     } catch (err: any) {
       if (err.message === 'ALREADY_VERIFIED') {
          setError('Account is already verified. Please try logging in.');
          setShowResend(false);
       } else {
-         setError(err.message || "Failed to resend email.");
+         setError(err.message);
       }
     } finally {
       setResendLoading(false);
@@ -80,7 +84,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsEmailLoading(true);
     setError('');
     setSuccessMsg('');
 
@@ -88,14 +92,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
       await userService.resetPassword(email);
       setSuccessMsg('Password reset link sent to your email.');
     } catch (err: any) {
-      setError(err.message || 'Failed to send reset link');
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setIsEmailLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     setError('');
     try {
       const user = await userService.googleLogin();
@@ -103,9 +107,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
     } catch (err: any) {
       setError(err.message);
     } finally {
-       setIsLoading(false);
+       setIsGoogleLoading(false);
     }
   }
+
+  const isLoading = isEmailLoading || isGoogleLoading;
 
   return (
     <div className="min-h-screen bg-[#050508] flex items-center justify-center relative overflow-hidden p-4">
@@ -138,21 +144,17 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
                  <CheckCircle2 className="w-8 h-8 text-green-400" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Check Your Inbox</h2>
-              <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                 We've sent a verification link to <span className="text-white font-mono block mt-2 bg-gray-800 rounded py-2 px-3 border border-gray-700">{email}</span>
+              <p className="text-gray-400 text-sm mb-4">
+                 We've sent a verification link to
               </p>
               
-              <div className="bg-yellow-900/10 border border-yellow-700/30 rounded-lg p-4 mb-8 text-left">
-                 <div className="flex gap-3">
-                   <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
-                   <div>
-                     <h4 className="text-yellow-400 font-bold text-sm mb-1">Important: Check Spam Folder</h4>
-                     <p className="text-xs text-yellow-200/70 leading-relaxed">
-                       If you don't see the email within 1 minute, please check your <strong>Spam</strong> or <strong>Junk</strong> folder.
-                     </p>
-                   </div>
-                 </div>
+              <div className="bg-black/40 border border-gray-800 rounded py-2 px-4 inline-block mb-6">
+                 <span className="text-white font-mono text-sm">{email}</span>
               </div>
+              
+              <p className="text-xs text-green-400/70 mb-8 flex items-center justify-center gap-2">
+                 If you don't see it, please check your spam folder.
+              </p>
 
               <button 
                  onClick={() => { setMode('login'); setError(''); setShowResend(false); }}
@@ -199,10 +201,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
                     </div>
                     <button 
                        type="submit"
-                       disabled={isLoading}
+                       disabled={isEmailLoading}
                        className="w-full h-12 rounded-lg bg-cyber-cyan hover:bg-cyan-400 text-black font-bold text-sm transition-all shadow-lg shadow-cyan-900/20 flex items-center justify-center gap-2"
                     >
-                       {isLoading ? <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div> : 'Send Reset Link'}
+                       {isEmailLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send Reset Link'}
                     </button>
                  </form>
                )}
@@ -226,8 +228,12 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
                      disabled={isLoading}
                      className="w-full h-12 rounded-lg bg-white text-black font-bold flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
                   >
-                     <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-                     {isLoading ? 'Connecting...' : 'Continue with Google'}
+                     {isGoogleLoading ? (
+                       <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
+                     ) : (
+                       <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
+                     )}
+                     {isGoogleLoading ? 'Connecting...' : 'Continue with Google'}
                   </button>
 
                   <div className="relative flex items-center py-2">
@@ -314,11 +320,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) => {
 
                      <button 
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isEmailLoading}
                         className="w-full h-12 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-sm hover:brightness-110 transition-all shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2"
                      >
-                        {isLoading ? (
-                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        {isEmailLoading ? (
+                           <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                            <>
                               {mode === 'login' ? 'Sign In' : 'Create Account'} <ArrowRight className="w-4 h-4" />
