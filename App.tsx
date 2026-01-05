@@ -50,10 +50,8 @@ export default function App() {
                setUser(profile);
             }
             
-            // Only switch to dashboard if we weren't already there or landing
-            if (currentView === 'auth' || currentView === 'landing') {
-               setCurrentView('dashboard');
-            }
+            // Switch to dashboard if authenticated
+            setCurrentView('dashboard');
           } catch (e) {
             console.error("Error fetching user profile", e);
             setUser(null);
@@ -71,15 +69,14 @@ export default function App() {
       } else {
         // User is signed out
         setUser(null);
-        if (currentView === 'dashboard') {
-          setCurrentView('landing');
-        }
+        // If we were on dashboard, go back to landing
+        setCurrentView(prev => prev === 'dashboard' ? 'landing' : prev);
         setLoading(false);
       }
     });
 
     return () => unsubscribe();
-  }, [currentView]);
+  }, []); // Removed currentView dependency to prevent double-loading on view change
 
   const handleLoginSuccess = (userData: UserProfile) => {
     setUser(userData);
