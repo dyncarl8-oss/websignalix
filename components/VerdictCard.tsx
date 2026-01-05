@@ -42,22 +42,22 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result }) => {
 
       {/* Top Header: Verdict & Score */}
       <div className="p-6 pb-4 flex flex-col justify-between items-start gap-4 relative">
-        <div className="absolute top-0 right-0 p-4 opacity-5">
-           {isBullish ? <TrendingUp className="w-32 h-32" /> : isBearish ? <TrendingUp className="w-32 h-32 rotate-180" /> : <Minus className="w-32 h-32" />}
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+           {isBullish ? <TrendingUp className="w-24 h-24 md:w-32 md:h-32" /> : isBearish ? <TrendingUp className="w-24 h-24 md:w-32 md:h-32 rotate-180" /> : <Minus className="w-24 h-24 md:w-32 md:h-32" />}
         </div>
 
         <div className="relative z-10 w-full">
           <h3 className="text-gray-400 text-[10px] font-mono uppercase tracking-widest mb-1 opacity-70">AI Predicted Direction</h3>
           <div className="flex items-center justify-between">
-            <div className={`text-6xl font-black tracking-tighter ${mainColor} flex items-center gap-1`}>
-              {isBullish && <ArrowUpRight className="w-12 h-12" />}
-              {isBearish && <ArrowDownRight className="w-12 h-12" />}
-              {!isBullish && !isBearish && <Minus className="w-12 h-12" />}
+            <div className={`text-5xl md:text-6xl font-black tracking-tighter ${mainColor} flex items-center gap-1`}>
+              {isBullish && <ArrowUpRight className="w-10 h-10 md:w-12 md:h-12" />}
+              {isBearish && <ArrowDownRight className="w-10 h-10 md:w-12 md:h-12" />}
+              {!isBullish && !isBearish && <Minus className="w-10 h-10 md:w-12 md:h-12" />}
               {result.verdict}
             </div>
             
             <div className="flex items-end flex-col">
-              <span className={`text-5xl font-mono font-bold ${result.confidence >= 90 ? 'text-cyber-cyan' : 'text-gray-300'}`}>
+              <span className={`text-4xl md:text-5xl font-mono font-bold ${result.confidence >= 90 ? 'text-cyber-cyan' : 'text-gray-300'}`}>
                 {result.confidence}%
               </span>
               <span className="text-[10px] text-gray-500 font-mono uppercase tracking-wider">Confidence</span>
@@ -68,7 +68,7 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result }) => {
 
       {/* Info Bar: Duration & Strategy (Fixed Layout) */}
       <div className="bg-black/30 border-y border-gray-800/50 flex flex-wrap">
-         <div className="flex-1 p-3 border-r border-gray-800/50 flex items-center justify-center md:justify-start gap-3 min-w-[200px]">
+         <div className="flex-1 p-3 border-r border-gray-800/50 flex items-center justify-center md:justify-start gap-3 min-w-[150px]">
             <div className="w-8 h-8 rounded bg-gray-800/50 flex items-center justify-center shrink-0">
                <Hourglass className="w-4 h-4 text-gray-400" />
             </div>
@@ -77,7 +77,7 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result }) => {
                <div className="text-sm text-gray-200 font-bold">{result.predictionDuration}</div>
             </div>
          </div>
-         <div className="flex-1 p-3 flex items-center justify-center md:justify-start gap-3 min-w-[200px]">
+         <div className="flex-1 p-3 flex items-center justify-center md:justify-start gap-3 min-w-[150px]">
              <div className="w-8 h-8 rounded bg-gray-800/50 flex items-center justify-center shrink-0">
                <Clock className="w-4 h-4 text-gray-400" />
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Coins, RefreshCw, Zap, LogOut, User, ChevronDown, Crown, CreditCard, UserCircle2, Terminal } from 'lucide-react';
+import { Activity, RefreshCw, Zap, LogOut, ChevronDown, Crown, CreditCard, UserCircle2, Terminal, Sparkles } from 'lucide-react';
 import { CryptoPair, FeedItem, AggregationResult, UserProfile } from '../types';
 import { COST_PER_ANALYSIS } from '../constants';
 import { fetchOHLCData } from '../services/cryptoService';
@@ -278,12 +278,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     <div className="flex flex-col h-screen bg-[#050508] text-gray-200 font-sans selection:bg-purple-500/30 selection:text-white overflow-hidden">
       
       {/* Header */}
-      <header className="h-16 flex items-center justify-between px-6 border-b border-gray-900 bg-[#050508] relative z-20">
+      <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-gray-900 bg-[#050508] relative z-20">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.3)]">
             <Activity className="text-white w-5 h-5" />
           </div>
-          <span className="font-bold text-lg tracking-tight">Signalix<span className="text-purple-500">AI</span></span>
+          <span className="font-bold text-lg tracking-tight hidden sm:inline">Signalix<span className="text-purple-500">AI</span></span>
         </div>
 
         <div className="flex items-center gap-4">
@@ -295,15 +295,20 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
            ) : (
              <button 
                onClick={() => setShowPricing(true)}
-               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900 border border-gray-800 hover:border-purple-500/50 transition-colors"
+               className="group relative flex items-center gap-2 pr-4 pl-3 py-1.5 rounded-full bg-gradient-to-r from-gray-900 to-gray-800 border border-purple-500/30 hover:border-purple-400 transition-all hover:shadow-[0_0_15px_rgba(168,85,247,0.2)]"
              >
-               <Coins className="w-4 h-4 text-yellow-500" />
-               <span className="text-xs font-mono font-bold hidden md:inline">{credits} credits</span>
-               <span className="text-xs uppercase bg-purple-500 text-white px-1.5 rounded ml-1 font-bold">Get Pro</span>
+               <div className="flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-purple-400 fill-purple-400/20 group-hover:text-purple-300 transition-colors" />
+                  <span className="text-xs font-mono font-bold text-gray-300 group-hover:text-white transition-colors">{credits}</span>
+               </div>
+               <div className="h-4 w-px bg-gray-700 mx-1"></div>
+               <div className="flex items-center gap-1">
+                 <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 group-hover:text-purple-300">Get Pro</span>
+               </div>
              </button>
            )}
            
-           <div className="h-6 w-px bg-gray-800 mx-1"></div>
+           <div className="h-6 w-px bg-gray-800 mx-1 hidden sm:block"></div>
 
            <button 
              onClick={resetSession}
@@ -313,7 +318,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
              <RefreshCw className="w-5 h-5" />
            </button>
 
-           <div className="h-6 w-px bg-gray-800 mx-1"></div>
+           <div className="h-6 w-px bg-gray-800 mx-1 hidden sm:block"></div>
 
            {/* Profile Dropdown */}
            <div className="relative">
@@ -370,7 +375,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       </header>
 
       {/* Main Feed Area */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 relative scroll-smooth">
+      <main className="flex-1 overflow-y-auto p-3 md:p-6 relative scroll-smooth">
         {/* Background Ambient */}
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/10 rounded-full blur-[120px]"></div>

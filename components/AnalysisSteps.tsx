@@ -21,7 +21,7 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
         className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors border-b border-gray-900/50"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center gap-4 flex-1">
+        <div className="flex items-center gap-4 flex-1 overflow-hidden">
           {/* Icon Box */}
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-700 ${
             status === 'loading' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
@@ -32,21 +32,21 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
           </div>
 
           {/* Title & Status */}
-          <div className="flex flex-col flex-1">
+          <div className="flex flex-col flex-1 min-w-0">
             <div className="flex items-center gap-3">
-              <h3 className={`font-bold text-sm tracking-wide transition-colors duration-500 ${
+              <h3 className={`font-bold text-sm tracking-wide truncate transition-colors duration-500 ${
                 status === 'loading' ? 'text-purple-400' : 'text-gray-200'
               }`}>
                 {title}
               </h3>
               {duration && status === 'complete' && (
-                <span className="text-xs font-mono font-bold text-gray-300 bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/50 shadow-sm animate-in fade-in zoom-in duration-500">
+                <span className="text-xs font-mono font-bold text-gray-300 bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/50 shadow-sm animate-in fade-in zoom-in duration-500 shrink-0">
                    {duration.toFixed(2)}s
                 </span>
               )}
             </div>
             
-            <p className="text-xs text-gray-500 mt-1 truncate max-w-[200px] md:max-w-md font-mono">
+            <p className="text-xs text-gray-500 mt-1 truncate max-w-full font-mono">
               {status === 'loading' ? 'Processing...' : 
                status === 'complete' ? errorMsg || (children ? 'Complete' : 'Done') : 'Failed'} 
             </p>
@@ -54,7 +54,7 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
         </div>
 
         {/* Right Actions: Expand */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-2 shrink-0">
           {headerRight}
           
           <div className={`text-gray-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
@@ -105,7 +105,7 @@ export const DataCollectionStep: React.FC<{
         <p className="text-gray-400 text-xs pl-1 font-mono animate-pulse">Fetching live market data from CryptoCompare...</p>
       )}
       {data && lastCandle && (
-        <div className="grid grid-cols-2 gap-8 text-sm pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 text-sm pt-1">
           <div>
             <div className="text-gray-500 text-[10px] uppercase font-bold mb-1">Current Price</div>
             <div className="text-2xl font-bold text-white tracking-tight font-mono">${lastCandle.close.toFixed(lastCandle.close < 1 ? 5 : 2)}</div>
@@ -133,13 +133,13 @@ export const DataCollectionStep: React.FC<{
 
 // --- TECHNICAL INDICATOR ROW COMPONENT ---
 const IndicatorRow = ({ name, signal, desc, value, strength }: { name: string, signal: string, desc: string, value: string | number, strength: number }) => (
-  <div className="flex items-center justify-between py-2 border-b border-gray-800/50 last:border-0 group hover:bg-white/5 px-2 rounded transition-colors">
-    <div className="flex flex-col gap-0.5 w-1/3">
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 sm:py-2 border-b border-gray-800/50 last:border-0 group hover:bg-white/5 px-2 rounded transition-colors gap-2 sm:gap-0">
+    <div className="flex flex-col gap-0.5 sm:w-1/3">
       <span className="text-xs font-bold text-gray-200">{name}</span>
       <span className="text-[10px] text-gray-500">{desc}</span>
     </div>
     
-    <div className="flex items-center gap-2 w-1/4">
+    <div className="flex items-center gap-2 sm:w-1/4">
        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
          signal === 'UP' ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' :
          signal === 'DOWN' ? 'bg-red-500/10 text-red-300 border-red-500/20' :
@@ -149,7 +149,7 @@ const IndicatorRow = ({ name, signal, desc, value, strength }: { name: string, s
        </span>
     </div>
 
-    <div className="flex flex-col items-end w-1/3">
+    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center sm:w-1/3 w-full mt-1 sm:mt-0">
        <span className="text-xs font-mono text-gray-300 font-bold">{value}</span>
        <div className="flex items-center gap-1 mt-0.5">
           <div className="w-12 h-1 bg-gray-800 rounded-full overflow-hidden">
