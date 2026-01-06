@@ -293,20 +293,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onNavi
                Create Free Account
             </button>
 
-            <div className="mt-24 border-t border-gray-900 pt-12">
-               <div className="flex flex-col md:flex-row justify-between items-center text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-8">
-                  <div>© 2026 SIGNALIX_AI SYSTEMS</div>
-                  <div className="flex gap-8 mt-4 md:mt-0">
+            <div className="mt-24 border-t border-gray-900 pt-8">
+               
+               {/* Links Row */}
+               <div className="flex flex-col md:flex-row justify-between items-center text-[10px] text-gray-600 font-mono uppercase tracking-wider w-full mb-8">
+                  <div className="mb-4 md:mb-0">© 2026 SIGNALIX_AI SYSTEMS</div>
+                  <div className="flex gap-8">
                      <span onClick={() => onNavigate('terms')} className="hover:text-cyber-cyan cursor-pointer transition-colors">Terms</span>
                      <span onClick={() => onNavigate('privacy')} className="hover:text-cyber-cyan cursor-pointer transition-colors">Privacy</span>
                      <span onClick={() => onNavigate('risk')} className="hover:text-red-500 cursor-pointer transition-colors">Risk</span>
                   </div>
                </div>
                
-               {/* Risk Disclosure */}
+               {/* Centered Disclaimer */}
                <div className="max-w-2xl mx-auto text-center">
-                  <p className="text-[10px] text-gray-700 leading-relaxed font-sans">
-                     <strong>RISK DISCLOSURE:</strong> Trading involves substantial risk. SignalixAI is an algorithmic tool, not a financial advisor. 
+                  <p className="text-[10px] text-gray-700 leading-relaxed font-sans opacity-70">
+                     RISK DISCLOSURE: Trading involves substantial risk. SignalixAI is an algorithmic tool, not a financial advisor. 
                      Past performance does not guarantee future results.
                   </p>
                </div>
