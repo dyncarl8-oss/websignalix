@@ -22,9 +22,10 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
     // Construct the correct TradingView symbol
     let tvSymbol = '';
     if (pair.type === 'CRYPTO') {
-      // Prioritize Coinbase for USD pairs as it's cleaner, or Binance for USDT
-      tvSymbol = `COINBASE:${pair.base}USD`;
+      // Use BINANCE for USDT pairs as it covers the vast majority of altcoins in the list
+      tvSymbol = `BINANCE:${pair.base}USDT`;
     } else {
+      // Forex mapping
       tvSymbol = `FX:${pair.base}${pair.quote}`; // e.g., FX:EURUSD
     }
 

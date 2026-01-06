@@ -23,11 +23,7 @@ export const SUPPORTED_PAIRS: CryptoPair[] = [
   { symbol: 'RNDR/USDT', base: 'RNDR', quote: 'USDT', name: 'Render', type: 'CRYPTO' },
   { symbol: 'WLD/USDT', base: 'WLD', quote: 'USDT', name: 'Worldcoin', type: 'CRYPTO' },
   { symbol: 'GRT/USDT', base: 'GRT', quote: 'USDT', name: 'The Graph', type: 'CRYPTO' },
-  { symbol: 'AGIX/USDT', base: 'AGIX', quote: 'USDT', name: 'SingularityNET', type: 'CRYPTO' },
-  { symbol: 'OCEAN/USDT', base: 'OCEAN', quote: 'USDT', name: 'Ocean Protocol', type: 'CRYPTO' },
-  { symbol: 'AKT/USDT', base: 'AKT', quote: 'USDT', name: 'Akash Network', type: 'CRYPTO' },
-  { symbol: 'AIOZ/USDT', base: 'AIOZ', quote: 'USDT', name: 'AIOZ Network', type: 'CRYPTO' },
-
+  
   // --- LAYER 1 & 2 ---
   { symbol: 'SUI/USDT', base: 'SUI', quote: 'USDT', name: 'Sui', type: 'CRYPTO' },
   { symbol: 'SEI/USDT', base: 'SEI', quote: 'USDT', name: 'Sei', type: 'CRYPTO' },
@@ -36,7 +32,6 @@ export const SUPPORTED_PAIRS: CryptoPair[] = [
   { symbol: 'ARB/USDT', base: 'ARB', quote: 'USDT', name: 'Arbitrum', type: 'CRYPTO' },
   { symbol: 'MATIC/USDT', base: 'MATIC', quote: 'USDT', name: 'Polygon', type: 'CRYPTO' },
   { symbol: 'NEAR/USDT', base: 'NEAR', quote: 'USDT', name: 'Near Protocol', type: 'CRYPTO' },
-  { symbol: 'KAS/USDT', base: 'KAS', quote: 'USDT', name: 'Kaspa', type: 'CRYPTO' },
   { symbol: 'INJ/USDT', base: 'INJ', quote: 'USDT', name: 'Injective', type: 'CRYPTO' },
   { symbol: 'TIA/USDT', base: 'TIA', quote: 'USDT', name: 'Celestia', type: 'CRYPTO' },
   { symbol: 'ATOM/USDT', base: 'ATOM', quote: 'USDT', name: 'Cosmos', type: 'CRYPTO' },
@@ -71,18 +66,13 @@ export const SUPPORTED_PAIRS: CryptoPair[] = [
   { symbol: 'MEME/USDT', base: 'MEME', quote: 'USDT', name: 'Memecoin', type: 'CRYPTO' },
   { symbol: 'BOME/USDT', base: 'BOME', quote: 'USDT', name: 'Book of Meme', type: 'CRYPTO' },
   { symbol: 'ORDI/USDT', base: 'ORDI', quote: 'USDT', name: 'Ordinals', type: 'CRYPTO' },
-  { symbol: 'SATS/USDT', base: 'SATS', quote: 'USDT', name: 'SATS', type: 'CRYPTO' },
-  { symbol: 'WLFI/USDT', base: 'WLFI', quote: 'USDT', name: 'World Liberty', type: 'CRYPTO' },
-  { symbol: 'HYPE/USDT', base: 'HYPE', quote: 'USDT', name: 'Hyperliquid', type: 'CRYPTO' },
 
   // --- LEGACY & PRIVACY ---
   { symbol: 'LTC/USDT', base: 'LTC', quote: 'USDT', name: 'Litecoin', type: 'CRYPTO' },
   { symbol: 'BCH/USDT', base: 'BCH', quote: 'USDT', name: 'Bitcoin Cash', type: 'CRYPTO' },
-  { symbol: 'XMR/USDT', base: 'XMR', quote: 'USDT', name: 'Monero', type: 'CRYPTO' },
   { symbol: 'XLM/USDT', base: 'XLM', quote: 'USDT', name: 'Stellar', type: 'CRYPTO' },
   { symbol: 'ETC/USDT', base: 'ETC', quote: 'USDT', name: 'Ethereum Classic', type: 'CRYPTO' },
   { symbol: 'EOS/USDT', base: 'EOS', quote: 'USDT', name: 'EOS', type: 'CRYPTO' },
-  { symbol: 'ZEC/USDT', base: 'ZEC', quote: 'USDT', name: 'Zcash', type: 'CRYPTO' },
   { symbol: 'DASH/USDT', base: 'DASH', quote: 'USDT', name: 'Dash', type: 'CRYPTO' },
 
   // --- FOREX ---
