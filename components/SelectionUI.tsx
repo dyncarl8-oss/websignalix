@@ -15,7 +15,7 @@ export const PairSelector: React.FC<{ onSelect: (pair: CryptoPair) => void }> = 
   const forex = filteredPairs.filter(p => p.type === 'FOREX');
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 bg-[#0b0b10] p-6 rounded-xl border border-gray-800 w-full shadow-lg flex flex-col max-h-[600px]">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 bg-[#0b0b10] p-6 rounded-xl border border-gray-800 w-full shadow-lg">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-mono uppercase text-gray-500 tracking-widest flex items-center gap-2">
            <span className="w-5 h-5 rounded-full border border-gray-600 flex items-center justify-center text-[10px]">1</span>
@@ -33,10 +33,10 @@ export const PairSelector: React.FC<{ onSelect: (pair: CryptoPair) => void }> = 
         </div>
       </div>
 
-      <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
+      <div className="mt-2">
         {crypto.length > 0 && (
           <div className="mb-6">
-            <h4 className="text-[10px] font-bold text-cyber-cyan uppercase mb-3 flex items-center gap-2 sticky top-0 bg-[#0b0b10] py-2 z-10">
+            <h4 className="text-[10px] font-bold text-cyber-cyan uppercase mb-3 flex items-center gap-2 sticky top-0 bg-[#0b0b10] py-2 z-10 border-b border-gray-800/50">
                <TrendingUp className="w-3 h-3" /> Crypto Markets
             </h4>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
@@ -57,7 +57,7 @@ export const PairSelector: React.FC<{ onSelect: (pair: CryptoPair) => void }> = 
 
         {forex.length > 0 && (
           <div>
-            <h4 className="text-[10px] font-bold text-cyber-magenta uppercase mb-3 flex items-center gap-2 sticky top-0 bg-[#0b0b10] py-2 z-10">
+            <h4 className="text-[10px] font-bold text-cyber-magenta uppercase mb-3 flex items-center gap-2 sticky top-0 bg-[#0b0b10] py-2 z-10 border-b border-gray-800/50">
                <Globe className="w-3 h-3" /> Forex Markets
             </h4>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">

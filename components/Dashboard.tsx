@@ -37,6 +37,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   
   const bottomRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   // Sync credits to persistent storage whenever they change (Only if not Pro)
   useEffect(() => {
@@ -70,6 +71,15 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   }, [feed, sessionState]);
 
   const scrollToBottom = () => {
+    // Special handling for initial load/reset: ensure we see the top (Welcome message)
+    // instead of scrolling to the bottom spacer which might hide the top content.
+    if (sessionState === 'pair-select' && feed.length <= 1) {
+       if (mainRef.current) {
+         mainRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+       }
+       return;
+    }
+
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -463,7 +473,10 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         </div>
 
         {/* Main Feed Scroll Area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 relative scroll-smooth w-full custom-scrollbar">
+        <main 
+          ref={mainRef}
+          className="flex-1 overflow-y-auto p-4 md:p-8 relative scroll-smooth w-full custom-scrollbar"
+        >
           
           {/* Background Ambient */}
           <div className="fixed inset-0 pointer-events-none z-0">

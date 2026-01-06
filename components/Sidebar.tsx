@@ -75,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* 2. History List (Scrollable) */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-2">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-2 relative z-0">
         <div className="flex items-center gap-2 mb-4 px-2 opacity-50">
            <Clock className="w-3 h-3 text-gray-400" />
            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Analysis Logs</span>
@@ -177,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* User Profile Dropdown Area */}
         <div className="relative" ref={profileRef}>
           {isProfileOpen && (
-            <div className="absolute bottom-full left-0 w-full mb-3 bg-[#13131a] border border-gray-800 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
+            <div className="absolute bottom-full left-0 w-full mb-3 bg-[#0a0a0f] border border-gray-800 rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.7)] overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
                <div className="p-3 border-b border-gray-800/50 bg-white/5">
                   <p className="text-white text-xs font-bold truncate">{user.name}</p>
                   <p className="text-[10px] text-gray-500 truncate font-mono">{user.email}</p>
@@ -206,7 +206,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <button 
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all duration-200 ${isProfileOpen ? 'bg-gray-800 border-gray-700' : 'bg-transparent border-transparent hover:bg-gray-800/50 hover:border-gray-800'}`}
+            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all duration-200 relative z-40 ${isProfileOpen ? 'bg-gray-800 border-gray-700' : 'bg-transparent border-transparent hover:bg-gray-800/50 hover:border-gray-800'}`}
           >
             <div className="relative">
                {user.photoURL ? (
