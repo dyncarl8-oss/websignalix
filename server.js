@@ -221,7 +221,8 @@ app.post('/api/create-checkout', async (req, res) => {
       return res.status(500).json({ error: 'Server configuration error: Missing Payment Token' });
     }
 
-    const productId = '19c116dd-58c2-4df0-8904-c1cb6d617e95'; // Replace with env var if needed
+    // Prefer environment variable for Product ID in production, fallback to hardcoded default
+    const productId = process.env.POLAR_PRODUCT_ID || '6f406ae3-6f82-4a40-bd37-c5dc2e64ddfd'; 
     
     let origin = process.env.BASE_URL;
     if (!origin) {
@@ -234,7 +235,8 @@ app.post('/api/create-checkout', async (req, res) => {
       }
     }
 
-    const response = await fetch('https://sandbox-api.polar.sh/v1/checkouts/', {
+    // PRODUCTION ENDPOINT: api.polar.sh
+    const response = await fetch('https://api.polar.sh/v1/checkouts/', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${polarToken}`,
@@ -266,8 +268,9 @@ app.post('/api/create-checkout', async (req, res) => {
 
 // Helper to fetch Polar Data
 const fetchPolarData = async (email, polarToken) => {
+    // PRODUCTION ENDPOINT: api.polar.sh
     // 1. Find Customer by Email
-    const customerSearch = await fetch(`https://sandbox-api.polar.sh/v1/customers?email=${encodeURIComponent(email)}`, {
+    const customerSearch = await fetch(`https://api.polar.sh/v1/customers?email=${encodeURIComponent(email)}`, {
       headers: { 'Authorization': `Bearer ${polarToken}` }
     });
 
@@ -279,7 +282,7 @@ const fetchPolarData = async (email, polarToken) => {
     if (!customer) return null;
 
     // 2. List Subscriptions for Customer
-    const subResponse = await fetch(`https://sandbox-api.polar.sh/v1/subscriptions?customer_id=${customer.id}`, {
+    const subResponse = await fetch(`https://api.polar.sh/v1/subscriptions?customer_id=${customer.id}`, {
       headers: { 'Authorization': `Bearer ${polarToken}` }
     });
 
@@ -395,7 +398,8 @@ app.post('/api/subscription/cancel', async (req, res) => {
   }
 
   try {
-    const response = await fetch(`https://sandbox-api.polar.sh/v1/subscriptions/${subscriptionId}`, {
+    // PRODUCTION ENDPOINT: api.polar.sh
+    const response = await fetch(`https://api.polar.sh/v1/subscriptions/${subscriptionId}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${polarToken}`,

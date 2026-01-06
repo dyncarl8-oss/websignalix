@@ -80,7 +80,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, user }) =>
             )}
           </button>
           <p className="text-center text-[10px] text-gray-500 mt-3">
-             Secure payment via Polar Sandbox. You will be redirected.
+             Secure payment via Polar. You will be redirected.
           </p>
         </div>
       </div>
