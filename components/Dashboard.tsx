@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { RefreshCw, Sidebar as SidebarIcon, Menu, Terminal } from 'lucide-react';
-import { CryptoPair, FeedItem, AggregationResult, UserProfile, HistoryItem } from '../types';
+import { CryptoPair, FeedItem, AggregationResult, UserProfile, HistoryItem, OHLCData } from '../types';
 import { COST_PER_ANALYSIS } from '../constants';
 import { fetchOHLCData } from '../services/cryptoService';
 import { computeIndicators } from '../services/indicatorService';
@@ -116,17 +116,77 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
      setSelectedTimeframe(item.timeframe);
      setSessionState('complete');
      
-     // Construct synthetic feed
-     setTimeout(() => {
-        addFeedItem('system-message', { text: `Restoring historical analysis for ${item.pair.symbol} (${item.timeframe})...` });
-        
-        setTimeout(() => {
-           addFeedItem('step-verdict', { result: item.result, pair: item.pair });
-        }, 500);
-     }, 100);
-
      // Close sidebar on mobile
      setIsSidebarOpen(false);
+
+     // Reconstruct the Feed
+     // 1. Initial Selection Messages
+     addFeedItem('user-selection', { text: `Selected Market: ${item.pair.symbol}` });
+     addFeedItem('user-selection', { text: `Selected Timeframe: ${item.timeframe}` });
+
+     addFeedItem('system-message', { text: `Restoring analysis from ${new Date(item.timestamp).toLocaleString()}...` });
+
+     // 2. Data Step (Reconstructed)
+     let mockOHLC: OHLCData[] | undefined = undefined;
+     if (item.marketSummary) {
+       // Create minimal OHLC array to satisfy DataCollectionStep display logic
+       // It usually looks at index 0 and index length-1 for change calculation
+       mockOHLC = [
+         { 
+           open: item.marketSummary.openPrice, 
+           close: item.marketSummary.openPrice, 
+           high: item.marketSummary.openPrice, 
+           low: item.marketSummary.openPrice, 
+           time: item.timestamp, 
+           volumeto: 0 
+         },
+         { 
+           open: item.marketSummary.currentPrice, // Doesn't matter for change calc if using [0].open
+           close: item.marketSummary.currentPrice, 
+           high: item.marketSummary.currentPrice, 
+           low: item.marketSummary.currentPrice, 
+           time: item.timestamp, 
+           volumeto: item.marketSummary.volume24h 
+         }
+       ];
+     }
+     
+     setTimeout(() => {
+        // Data Step
+        addFeedItem('step-data', { 
+           pair: item.pair.symbol, 
+           rawData: mockOHLC, 
+           duration: 0.5 
+        }, 'complete');
+
+        // Technical Step
+        if (item.indicators) {
+           addFeedItem('step-technical', { 
+              indicators: item.indicators, 
+              duration: 0.8 
+           }, 'complete');
+        }
+
+        // Aggregation Step
+        if (item.aggregation) {
+           addFeedItem('step-aggregation', { 
+              results: item.aggregation, 
+              duration: 0.4 
+           }, 'complete');
+        }
+
+        // AI Step
+        if (item.result) {
+           addFeedItem('step-ai', { 
+              result: item.result, 
+              duration: 2.1 
+           }, 'complete');
+        }
+
+        // Verdict Step
+        addFeedItem('step-verdict', { result: item.result, pair: item.pair });
+
+     }, 100);
   };
 
   // Helper for consistent delays
@@ -277,8 +337,27 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           setCredits(prev => prev - COST_PER_ANALYSIS);
         }
 
-        // SAVE TO HISTORY
-        await historyService.saveAnalysis(user.id, pair, tf, analysis);
+        // CALCULATE SUMMARY FOR HISTORY
+        const lastCandle = ohlc[ohlc.length - 1];
+        const firstCandle = ohlc[0];
+        const marketSummary = {
+           currentPrice: lastCandle.close,
+           volume24h: lastCandle.volumeto,
+           openPrice: firstCandle.open,
+           priceChange24h: lastCandle.close - firstCandle.open,
+           periodChangePercent: ((lastCandle.close - firstCandle.open) / firstCandle.open) * 100
+        };
+
+        // SAVE TO HISTORY (Full Context)
+        await historyService.saveAnalysis(
+           user.id, 
+           pair, 
+           tf, 
+           analysis,
+           indicators,
+           aggResults,
+           marketSummary
+        );
         loadHistoryList(); // Refresh history list
 
         // --- FINAL VERDICT TRANSITION ---

@@ -90,6 +90,14 @@ export interface AIAnalysisResult {
   thoughtProcess?: string;
 }
 
+export interface MarketSummary {
+  currentPrice: number;
+  volume24h: number;
+  priceChange24h: number;
+  periodChangePercent: number;
+  openPrice: number; // Used to reconstruct change calc
+}
+
 export interface HistoryItem {
   id: string;
   userId: string;
@@ -97,6 +105,10 @@ export interface HistoryItem {
   timeframe: string;
   timestamp: number;
   result: AIAnalysisResult;
+  // New fields for full restoration
+  indicators?: TechnicalIndicators;
+  aggregation?: AggregationResult;
+  marketSummary?: MarketSummary;
 }
 
 export type FeedItemType = 
