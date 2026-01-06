@@ -55,6 +55,15 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     setHistory(items);
   };
 
+  const handleDeleteHistory = async (id: string) => {
+    try {
+      await historyService.deleteAnalysis(id);
+      setHistory(prev => prev.filter(item => item.id !== id));
+    } catch (error) {
+      console.error("Failed to delete history item", error);
+    }
+  };
+
   // Aggressive auto-scroll on feed update
   useEffect(() => {
     scrollToBottom();
@@ -397,6 +406,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
            onOpenSubscription={() => setShowSubscription(true)}
            history={history}
            onLoadHistory={handleLoadHistory}
+           onDeleteHistory={handleDeleteHistory}
          />
       </div>
 
@@ -412,6 +422,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                onOpenSubscription={() => { setShowSubscription(true); setIsSidebarOpen(false); }}
                history={history}
                onLoadHistory={handleLoadHistory}
+               onDeleteHistory={handleDeleteHistory}
              />
           </div>
           <div className="flex-1 bg-black/50 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)}></div>

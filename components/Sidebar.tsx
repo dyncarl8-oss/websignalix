@@ -13,7 +13,8 @@ import {
   UserCircle2, 
   ChevronUp,
   Sparkles,
-  LayoutGrid
+  LayoutGrid,
+  Trash2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,6 +25,7 @@ interface SidebarProps {
   onOpenSubscription: () => void;
   history: HistoryItem[];
   onLoadHistory: (item: HistoryItem) => void;
+  onDeleteHistory: (id: string) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -33,7 +35,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenPricing,
   onOpenSubscription,
   history,
-  onLoadHistory
+  onLoadHistory,
+  onDeleteHistory
 }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -87,10 +90,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         ) : (
           <div className="space-y-2 pb-4">
             {history.map((item) => (
-              <button
+              <div
                 key={item.id}
                 onClick={() => onLoadHistory(item)}
-                className="w-full group bg-[#0a0a0f] hover:bg-[#15151a] border border-gray-800/50 hover:border-gray-700 rounded-lg p-3 transition-all text-left relative overflow-hidden"
+                className="w-full group bg-[#0a0a0f] hover:bg-[#15151a] border border-gray-800/50 hover:border-gray-700 rounded-lg p-3 transition-all text-left relative overflow-hidden cursor-pointer"
               >
                 {/* Result Indicator Line */}
                 <div className={`absolute left-0 top-0 bottom-0 w-0.5 ${
@@ -115,11 +118,22 @@ const Sidebar: React.FC<SidebarProps> = ({
                 
                 <div className="flex justify-between items-center pl-2">
                    <span className="text-[10px] text-gray-600 font-mono">{formatTime(item.timestamp)}</span>
-                   <span className="text-[10px] text-cyber-cyan opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                      Load <ArrowUpRight className="w-2 h-2" />
-                   </span>
+                   
+                   {/* Delete Button (Visible on Hover) */}
+                   <button 
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       if (window.confirm("Delete this analysis log?")) {
+                         onDeleteHistory(item.id);
+                       }
+                     }}
+                     className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-900/30 rounded text-gray-500 hover:text-red-400"
+                     title="Delete Log"
+                   >
+                     <Trash2 className="w-3 h-3" />
+                   </button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

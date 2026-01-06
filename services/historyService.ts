@@ -1,6 +1,8 @@
 import { 
   collection, 
   addDoc, 
+  deleteDoc,
+  doc,
   query, 
   where, 
   limit, 
@@ -139,6 +141,17 @@ export const historyService = {
     } catch (error: any) {
       serverLog('error', `[History] FETCH FAILED: ${error.message}`);
       return [];
+    }
+  },
+
+  async deleteAnalysis(docId: string) {
+    serverLog('info', `[History] Deleting document: ${docId}`);
+    try {
+      await deleteDoc(doc(db, COLLECTION_NAME, docId));
+      return true;
+    } catch (error: any) {
+      serverLog('error', `[History] DELETE FAILED: ${error.message}`);
+      throw error;
     }
   }
 };
