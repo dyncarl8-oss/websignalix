@@ -30,6 +30,8 @@ export default function App() {
         }
 
         if (firebaseUser.emailVerified) {
+          // Only set loading if we aren't already loading to prevent flicker
+          // But usually we want to ensure we block UI while fetching profile
           setLoading(true); 
           try {
             const params = new URLSearchParams(window.location.search);
@@ -46,10 +48,12 @@ export default function App() {
                setUser(profile);
             }
             
-            // Only switch to dashboard if we are currently on a non-public page
-            if (currentView === 'auth' || currentView === 'landing') {
-              setCurrentView('dashboard');
-            }
+            // Switch to dashboard using functional update to avoid dependency on currentView
+            setCurrentView(prev => {
+              if (prev === 'auth' || prev === 'landing') return 'dashboard';
+              return prev;
+            });
+
           } catch (e) {
             console.error("Error fetching user profile", e);
             setUser(null);
@@ -63,13 +67,14 @@ export default function App() {
         }
       } else {
         setUser(null);
-        if (currentView === 'dashboard') setCurrentView('landing');
+        // If user logs out or session invalid, go back to landing if we were on dashboard
+        setCurrentView(prev => prev === 'dashboard' ? 'landing' : prev);
         setLoading(false);
       }
     });
 
     return () => unsubscribe();
-  }, [currentView]);
+  }, []); // Empty dependency array prevents re-running effect on view change
 
   const handleLoginSuccess = (userData: UserProfile) => {
     setUser(userData);
