@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, ArrowRight, Terminal, Cpu, Shield, Zap, Globe, Lock, BarChart3, TrendingUp, Network, Clock } from 'lucide-react';
 import { ViewState } from '../App';
+import logo from '../logo.png';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -37,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onNavi
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 border-b ${scrollY > 20 ? 'bg-cyber-black/90 backdrop-blur-md border-cyber-border' : 'bg-transparent border-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
-             <img src="/logo.png" alt="SignalixAI" className="w-8 h-8 object-contain" />
+             <img src={logo} alt="SignalixAI" className="w-8 h-8 object-contain" />
             <span className="font-bold text-lg tracking-wider text-white font-mono">SIGNALIX<span className="text-cyber-cyan">_AI</span></span>
           </div>
           

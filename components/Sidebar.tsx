@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CryptoPair, HistoryItem, UserProfile } from '../types';
+import logo from '../logo.png';
 import { 
   Clock, 
   ArrowUpRight, 
@@ -60,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* 1. Branding Header */}
       <div className="p-6 pb-4 shrink-0 bg-[#050508]/95 backdrop-blur z-10">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="SignalixAI" className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(0,243,255,0.5)]" />
+          <img src={logo} alt="SignalixAI" className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(0,243,255,0.5)]" />
           <h1 className="text-xl font-bold tracking-tighter text-white font-mono">
             SIGNALIX<span className="text-cyber-cyan">_AI</span>
           </h1>
