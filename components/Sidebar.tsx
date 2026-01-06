@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CryptoPair, HistoryItem, UserProfile } from '../types';
 import { 
-  Activity, 
   Clock, 
   ArrowUpRight, 
   ArrowDownRight, 
@@ -12,7 +11,6 @@ import {
   CreditCard, 
   UserCircle2, 
   ChevronUp,
-  Sparkles,
   LayoutGrid,
   Trash2
 } from 'lucide-react';
@@ -62,9 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* 1. Branding Header */}
       <div className="p-6 pb-4 shrink-0 bg-[#050508]/95 backdrop-blur z-10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-gradient-to-br from-cyber-cyan to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.3)]">
-            <Activity className="text-white w-5 h-5" />
-          </div>
+          <img src="/logo.png" alt="SignalixAI" className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(0,243,255,0.5)]" />
           <h1 className="text-xl font-bold tracking-tighter text-white font-mono">
             SIGNALIX<span className="text-cyber-cyan">_AI</span>
           </h1>

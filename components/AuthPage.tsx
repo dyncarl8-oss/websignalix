@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Mail, Lock, ArrowRight, CheckCircle2, ArrowLeft, AlertTriangle, RefreshCw, Loader2, Info, Terminal } from 'lucide-react';
+import { Mail, Lock, ArrowRight, CheckCircle2, ArrowLeft, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
 import { userService } from '../services/userService';
 import { UserProfile } from '../types';
 
@@ -138,9 +138,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack, initialMode
         {/* Brand Header */}
         <div className="flex justify-center mb-10 cursor-pointer group" onClick={onBack}>
           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 flex items-center justify-center border border-cyber-cyan/30 rounded bg-cyber-cyan/5 group-hover:bg-cyber-cyan/10 transition-colors shadow-[0_0_15px_rgba(0,243,255,0.2)]">
-                <Activity className="text-cyber-cyan w-6 h-6" />
-             </div>
+             <img src="/logo.png" alt="SignalixAI" className="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(0,243,255,0.3)]" />
              <span className="font-bold text-2xl text-white font-mono tracking-wider">SIGNALIX<span className="text-cyber-cyan">_AI</span></span>
           </div>
         </div>
