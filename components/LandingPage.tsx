@@ -304,15 +304,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onNavi
                </div>
                
                {/* Risk Disclosure */}
-               <div className="max-w-3xl mx-auto text-center space-y-3">
+               <div className="max-w-2xl mx-auto text-center">
                   <p className="text-[10px] text-gray-700 leading-relaxed font-sans">
-                     <strong>RISK DISCLOSURE:</strong> Trading in financial markets involves a high degree of risk and is not suitable for everyone. 
-                     You could lose some or all of your initial investment; do not invest money that you cannot afford to lose. 
-                     SignalixAI is an algorithmic analysis tool, not a financial advisor. Signals generated are for educational purposes only.
-                  </p>
-                  <p className="text-[10px] text-gray-700 leading-relaxed font-sans">
-                     Past performance of AI predictions does not guarantee future results. Market conditions can change rapidly. 
-                     SignalixAI assumes no liability for any trading losses incurred by using this platform.
+                     <strong>RISK DISCLOSURE:</strong> Trading involves substantial risk. SignalixAI is an algorithmic tool, not a financial advisor. 
+                     Past performance does not guarantee future results.
                   </p>
                </div>
             </div>
