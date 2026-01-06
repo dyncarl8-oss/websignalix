@@ -1,12 +1,79 @@
-import React from 'react';
-import { AIAnalysisResult } from '../types';
-import { ArrowUpRight, ArrowDownRight, Minus, ShieldAlert, Target, TrendingUp, Clock, Hourglass, Gavel } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { AIAnalysisResult, CryptoPair } from '../types';
+import { ArrowUpRight, ArrowDownRight, Minus, ShieldAlert, Target, TrendingUp, Clock, Hourglass, Gavel, BarChart2 } from 'lucide-react';
 
 interface VerdictCardProps {
   result: AIAnalysisResult | null;
+  pair?: CryptoPair;
 }
 
-const VerdictCard: React.FC<VerdictCardProps> = ({ result }) => {
+declare global {
+  interface Window {
+    TradingView: any;
+  }
+}
+
+const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pair || !containerRef.current) return;
+
+    // Construct the correct TradingView symbol
+    let tvSymbol = '';
+    if (pair.type === 'CRYPTO') {
+      // Prioritize Coinbase for USD pairs as it's cleaner, or Binance for USDT
+      tvSymbol = `COINBASE:${pair.base}USD`;
+    } else {
+      tvSymbol = `FX:${pair.base}${pair.quote}`; // e.g., FX:EURUSD
+    }
+
+    const scriptId = 'tradingview-widget-script';
+    const containerId = `tradingview_${Math.random().toString(36).substring(7)}`;
+    
+    // Assign a unique ID to the container for this specific instance
+    if (containerRef.current) {
+      containerRef.current.id = containerId;
+    }
+
+    const initWidget = () => {
+      if (window.TradingView) {
+        new window.TradingView.widget({
+          autosize: true,
+          symbol: tvSymbol,
+          interval: "60",
+          timezone: "Etc/UTC",
+          theme: "dark",
+          style: "1", // 1 = Candles
+          locale: "en",
+          enable_publishing: false,
+          hide_top_toolbar: false,
+          hide_legend: false,
+          save_image: false,
+          backgroundColor: "rgba(11, 11, 16, 1)", // Matches panel background #0b0b10
+          gridColor: "rgba(42, 42, 53, 0.3)",
+          container_id: containerId,
+          toolbar_bg: "#0b0b10",
+          hide_side_toolbar: true,
+          allow_symbol_change: false,
+        });
+      }
+    };
+
+    // Check if script is already loaded
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://s3.tradingview.com/tv.js';
+      script.async = true;
+      script.onload = initWidget;
+      document.head.appendChild(script);
+    } else {
+      initWidget();
+    }
+
+  }, [pair]);
+
   if (!result) return null;
 
   const isBullish = result.verdict === 'UP';
@@ -96,7 +163,7 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result }) => {
         </div>
 
         {/* 3 Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-900/30 p-4 rounded border border-gray-800/50 hover:bg-gray-900/50 transition-colors">
             <h4 className="flex items-center gap-2 text-cyber-cyan text-xs font-bold uppercase mb-3">
               <TrendingUp className="w-3 h-3" /> Key Confirmations
@@ -139,6 +206,21 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result }) => {
             </ul>
           </div>
         </div>
+
+        {/* Real-Time Chart Section */}
+        {pair && (
+          <div className="border-t border-gray-800 pt-6">
+            <div className="flex items-center gap-2 mb-4 text-gray-400">
+               <BarChart2 className="w-4 h-4 text-cyber-cyan" />
+               <span className="text-xs font-bold uppercase tracking-wider">Live Market Data: {pair.base}/{pair.quote}</span>
+            </div>
+            <div 
+              ref={containerRef} 
+              className="w-full h-[400px] rounded-lg overflow-hidden border border-gray-800/50 shadow-inner bg-[#0b0b10]"
+            ></div>
+          </div>
+        )}
+
       </div>
     </div>
   );

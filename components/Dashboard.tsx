@@ -260,8 +260,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         // 2. Wait for the user to read it (Believable delay)
         await wait(2500); 
         
-        // 3. Show Result
-        addFeedItem('step-verdict', { result: analysis });
+        // 3. Show Result, passing the PAIR for the chart
+        addFeedItem('step-verdict', { result: analysis, pair: pair });
         setSessionState('complete');
         setTimeout(scrollToBottom, 100);
       }
@@ -362,7 +362,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                        <button 
                          onClick={onLogout}
                          className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-900/10 hover:text-red-300 rounded-lg transition-colors flex items-center gap-2"
-                       >
+                         >
                          <LogOut className="w-4 h-4" />
                          Sign Out
                        </button>
@@ -426,7 +426,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                 <AIAnalysisStep status={item.status} result={item.data?.result} partialThought={item.data?.partialThought} duration={item.data?.duration} />
               )}
               {item.type === 'step-verdict' && (
-                <div className="mt-2 mb-8"><VerdictCard result={item.data.result} /></div>
+                <div className="mt-2 mb-8"><VerdictCard result={item.data.result} pair={item.data.pair} /></div>
               )}
             </div>
           ))}
